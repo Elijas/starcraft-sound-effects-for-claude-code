@@ -65,9 +65,7 @@ echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
 
 ## 🎵 Getting Sounds
 
-Due to copyright, we cannot distribute the StarCraft sound files directly. However, they're easy to find:
-
-1. **Search for**: "StarCraft Brood War Terran Advisor sounds"
+1. **Search online for**: "StarCraft unit sounds zip"
 2. **You need these 14 files**:
    - `tadErr00-not-enough-minerals.wav`
    - `tadErr01-insufficient-vespene-gas.wav`
