@@ -1,0 +1,86 @@
+{
+  "version": "3.0",
+  "description": "Direct 14-class semantic mapping for StarCraft sounds",
+  "sound_directory": "/Users/user/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated",
+  "sounds": {
+    "1": {
+      "file": "tadErr00-not-enough-minerals.wav",
+      "class": "Need clarification",
+      "description": "Ambiguous request requires resolution"
+    },
+    "2": {
+      "file": "tadErr01-insufficient-vespene-gas.wav",
+      "class": "Need resources",
+      "description": "Missing required materials or access"
+    },
+    "3": {
+      "file": "tadErr02-additional-supply-depots-required.wav",
+      "class": "Need selection",
+      "description": "Multiple valid paths available"
+    },
+    "4": {
+      "file": "TAdErr06-not-enough-energy.wav",
+      "class": "Cannot locate",
+      "description": "Search or lookup unsuccessful"
+    },
+    "5": {
+      "file": "tadUpd03-addon-complete.wav",
+      "class": "Routine complete",
+      "description": "Small incremental progress made"
+    },
+    "6": {
+      "file": "tadUPD06-upgrade-complete.wav",
+      "class": "Milestone complete",
+      "description": "Significant task accomplished"
+    },
+    "7": {
+      "file": "tadUpd02-research-complete.wav",
+      "class": "Discovery complete",
+      "description": "Information found or analyzed"
+    },
+    "8": {
+      "file": "tadUPD05-abandoning-auxiliary-structure.wav",
+      "class": "Removal complete",
+      "description": "Elimination or cleanup performed"
+    },
+    "9": {
+      "file": "TAdUpd07-nuclear-missile-ready.wav",
+      "class": "Optimal achievement",
+      "description": "Best possible result achieved"
+    },
+    "10": {
+      "file": "tadErr03-landing-sequence-interrupted.wav",
+      "class": "Partial completion",
+      "description": "Incomplete but acceptable result"
+    },
+    "11": {
+      "file": "tadUpd00-base-is-under-attack.wav",
+      "class": "Problems discovered",
+      "description": "Pre-existing issues detected"
+    },
+    "12": {
+      "file": "tadUpd01-your-forces-are-under-attack.wav",
+      "class": "Operation failing",
+      "description": "Current actions causing problems"
+    },
+    "13": {
+      "file": "tadUPD04-nuclear-launch-detected.wav",
+      "class": "Critical failure",
+      "description": "Emergency or severe situation"
+    },
+    "14": {
+      "file": "tadErr04-unacceptable-landing-zone.wav",
+      "class": "Request impossible",
+      "description": "Fundamental blocker exists"
+    }
+  },
+  "default_class": 5,
+  "statistics": {
+    "total_classes": 14,
+    "user_action_required": [1, 2, 3, 4],
+    "completion_states": [5, 6, 7, 8],
+    "success_levels": [9, 10],
+    "problem_states": [11, 12, 13],
+    "blocker": [14]
+  }
+}

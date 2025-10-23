@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# StarCraft Sound Router (Fast Version)
+# Routes Claude Code responses to contextually appropriate StarCraft Terran Advisor sounds
+# Uses pattern matching instead of AI for speed
+
+set -euo pipefail
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOUNDS_JSON="${SCRIPT_DIR}/starcraft-sounds.json"
+
+# Read hook input from stdin (JSON format)
+HOOK_INPUT=$(cat)
+
+# Parse JSON input to extract transcript_path and stop_hook_active
+TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || echo "")
+STOP_HOOK_ACTIVE=$(echo "$HOOK_INPUT" | jq -r '.stop_hook_active // false' 2>/dev/null || echo "false")
+
+# Expand tilde in transcript path if present
+if [[ "$TRANSCRIPT_PATH" == "~"* ]]; then
+    TRANSCRIPT_PATH="${HOME}${TRANSCRIPT_PATH:1}"
+fi
+
+# Prevent infinite loops
+if [ "$STOP_HOOK_ACTIVE" = "true" ]; then
+    exit 0
+fi
+
+# Debug mode (set STARCRAFT_DEBUG=1 to enable)
+DEBUG="${STARCRAFT_DEBUG:-0}"
+debug_log() {
+    if [ "$DEBUG" = "1" ]; then
+        echo "[DEBUG] $*" >&2
+    fi
+}
+
+debug_log "Starting StarCraft sound router (fast mode)"
+debug_log "Transcript path: $TRANSCRIPT_PATH"
+
+# Extract Claude's latest response from transcript
+if [ -z "$TRANSCRIPT_PATH" ] || [ ! -f "$TRANSCRIPT_PATH" ]; then
+    debug_log "No valid transcript path provided, exiting"
+    exit 0
+fi
+
+# Parse the transcript (JSONL format - one JSON per line)
+# Find the last assistant message
+LAST_ASSISTANT_MESSAGE=$(grep '"type":"assistant"' "$TRANSCRIPT_PATH" | tail -1 | jq -r '.message.content[] | select(.type == "text") | .text' 2>/dev/null || echo "")
+
+if [ -z "$LAST_ASSISTANT_MESSAGE" ] || [ "$LAST_ASSISTANT_MESSAGE" = "null" ]; then
+    debug_log "No assistant message found in transcript"
+    exit 0
+fi
+
+debug_log "Last assistant message length: ${#LAST_ASSISTANT_MESSAGE}"
+
+# Get base path
+BASE_PATH=$(jq -r '.base_path' "$SOUNDS_JSON")
+
+# Pattern matching to select sound
+SOUND_FILE="tadUpd03-addon-complete.wav"  # default - simple acknowledgment
+
+# Convert to lowercase for case-insensitive matching
+MESSAGE_LOWER=$(echo "$LAST_ASSISTANT_MESSAGE" | tr '[:upper:]' '[:lower:]')
+
+# Count message length to help distinguish significant vs simple responses
+MESSAGE_LENGTH=${#LAST_ASSISTANT_MESSAGE}
+
+# CRITICAL ERRORS - Nuclear launch detected (severe issues)
+if echo "$MESSAGE_LOWER" | grep -qE '(fatal|critical|crash|exception|cannot|failed.*test|build.*fail|wipe|corrupt|broke|destroy|catastroph)'; then
+    SOUND_FILE="tadUPD04-nuclear-launch-detected.wav"
+
+# RESOURCE/DEPENDENCY ERRORS - Not enough minerals (missing things)
+elif echo "$MESSAGE_LOWER" | grep -qE '(not found|missing|doesn.*t exist|can.*t find|404|no such|gone|lost|disappear)'; then
+    SOUND_FILE="tadErr00-not-enough-minerals.wav"
+
+# BUILD/COMPILE ERRORS - Insufficient vespene gas (compilation/build issues)
+elif echo "$MESSAGE_LOWER" | grep -qE '(syntax error|compile error|build error|type error|lint|typescript)'; then
+    SOUND_FILE="tadErr01-insufficient-vespene-gas.wav"
+
+# CAPACITY/LIMIT ERRORS - Additional supply depots required
+elif echo "$MESSAGE_LOWER" | grep -qE '(limit|quota|exceed|too many|maximum|out of|insufficient)'; then
+    SOUND_FILE="tadErr02-additional-supply-depots-required.wav"
+
+# INTERRUPTED/CANCELLED - Landing sequence interrupted
+elif echo "$MESSAGE_LOWER" | grep -qE '(interrupt|cancel|abort|timeout|hung|stuck)'; then
+    SOUND_FILE="tadErr03-landing-sequence-interrupted.wav"
+
+# PREREQUISITE/DEPENDENCY - Unacceptable landing zone (wrong setup/config)
+elif echo "$MESSAGE_LOWER" | grep -qE '(require.*first|must.*before|prerequisite|depends on|need to install)'; then
+    SOUND_FILE="tadErr04-unacceptable-landing-zone.wav"
+
+# BLOCKED/BUSY - Not enough energy (resource locked/busy)
+elif echo "$MESSAGE_LOWER" | grep -qE '(locked|busy|in use|permission denied|already running)'; then
+    SOUND_FILE="TAdErr06-not-enough-energy.wav"
+
+# BIG WIN - Nuclear missile ready (major completion, long response with success indicators)
+elif [ $MESSAGE_LENGTH -gt 800 ] && echo "$MESSAGE_LOWER" | grep -qE '(successfully|completed|fixed|resolved|all.*pass|deployed)'; then
+    SOUND_FILE="TAdUpd07-nuclear-missile-ready.wav"
+
+# MEDIUM SUCCESS - Research complete (task completed, tests passed, etc.)
+elif echo "$MESSAGE_LOWER" | grep -qE '(completed|finished|done|successfully|fixed|resolved|passed|deployed)'; then
+    SOUND_FILE="tadUpd02-research-complete.wav"
+
+# INCREMENTAL PROGRESS - Upgrade complete (made progress, updated something)
+elif echo "$MESSAGE_LOWER" | grep -qE '(updated|modified|changed|added|created|implemented|refactor)'; then
+    SOUND_FILE="tadUPD06-upgrade-complete.wav"
+
+# SMALL SUCCESS - Addon complete (quick win, simple confirmation)
+elif echo "$MESSAGE_LOWER" | grep -qE '(^(sure|okay|yes|got it)|i.*ll|let me|here.*s)' && [ $MESSAGE_LENGTH -lt 300 ]; then
+    SOUND_FILE="tadUpd03-addon-complete.wav"
+
+# URGENT ATTENTION - Forces under attack (warnings, issues detected, needs review)
+elif echo "$MESSAGE_LOWER" | grep -qE '(warning|issue detected|found.*problem|deprecated|should|recommend|suggestion)'; then
+    SOUND_FILE="tadUpd01-your-forces-are-under-attack.wav"
+
+# CLEANUP/REMOVAL - Abandoning auxiliary structure (deleting, removing, cleanup)
+elif echo "$MESSAGE_LOWER" | grep -qE '(remov|delet|clean|drop|uninstall|deprecat)'; then
+    SOUND_FILE="tadUPD05-abandoning-auxiliary-structure.wav"
+
+# URGENT SITUATION - Base under attack (multiple errors, serious problems)
+elif echo "$MESSAGE_LOWER" | grep -qE 'error' && [ $MESSAGE_LENGTH -gt 500 ]; then
+    SOUND_FILE="tadUpd00-base-is-under-attack.wav"
+
+# Default: Simple acknowledgment for routine responses
+else
+    SOUND_FILE="tadUpd03-addon-complete.wav"
+fi
+
+debug_log "Selected sound: $SOUND_FILE"
+
+SOUND_PATH="${BASE_PATH}/${SOUND_FILE}"
+
+# Verify sound file exists
+if [ ! -f "$SOUND_PATH" ]; then
+    debug_log "Sound file not found: $SOUND_PATH, using default"
+    SOUND_PATH="${BASE_PATH}/tadUpd03-addon-complete.wav"
+fi
+
+# Play the sound (macOS uses afplay)
+debug_log "Playing sound: $SOUND_PATH"
+afplay "$SOUND_PATH" &
+
+exit 0

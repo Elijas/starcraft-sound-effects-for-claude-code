@@ -1,0 +1,363 @@
+{
+  "version": "2.0",
+  "description": "Comprehensive sound mapping system for Claude Code responses",
+  "dimensions": {
+    "mode": {
+      "description": "How Claude is engaging with the user",
+      "values": {
+        "question": "Asking user for input, decisions, clarifications - needs attention!",
+        "action": "Actively executing work, doing tasks, in progress",
+        "report": "Informing, explaining, reporting results"
+      }
+    },
+    "type": {
+      "description": "What kind of work is being done",
+      "values": {
+        "constructive": "Building, creating, fixing, implementing, adding code",
+        "destructive": "Deleting, removing, cleaning up, destroying code",
+        "analytical": "Reading, searching, exploring, understanding code"
+      }
+    },
+    "outcome": {
+      "description": "How things are going",
+      "values": {
+        "success": "Positive, went well, completed successfully, found",
+        "problem": "Error, failure, blocked, not found, issue",
+        "neutral": "Normal operation, in-progress, informational"
+      }
+    }
+  },
+  "mappings": [
+    {
+      "mode": "question",
+      "type": "constructive",
+      "outcome": "success",
+      "sounds": ["tadUpd02-research-complete.wav", "tadUPD06-upgrade-complete.wav"],
+      "examples": [
+        "Feature complete! Want me to add tests too?",
+        "Implementation ready! Should I deploy?",
+        "Bug fixed! Create a PR?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "constructive",
+      "outcome": "problem",
+      "sounds": ["tadUpd01-your-forces-are-under-attack.wav", "tadErr01-insufficient-vespene-gas.wav"],
+      "examples": [
+        "Build failed - how should I fix it?",
+        "Missing dependencies - should I install them?",
+        "Error in 3 files - which one should I tackle first?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "constructive",
+      "outcome": "neutral",
+      "sounds": ["tadUpd00-base-is-under-attack.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Important: Which architecture should I use?",
+        "How should I implement this feature?",
+        "Which library do you prefer?"
+      ],
+      "notes": "Uses 'base-is-under-attack' for urgent/important questions, 'addon-complete' for minor ones"
+    },
+    {
+      "mode": "question",
+      "type": "destructive",
+      "outcome": "success",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Cleanup complete! Delete these old backups too?",
+        "Removed test files successfully - remove logs as well?",
+        "Old code deleted - want me to clean up comments?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "destructive",
+      "outcome": "problem",
+      "sounds": ["tadUpd01-your-forces-are-under-attack.wav", "tadErr04-unacceptable-landing-zone.wav"],
+      "examples": [
+        "Can't delete - file is locked. Force deletion?",
+        "Dependencies exist - remove them too?",
+        "Files in use - should I wait and retry?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "destructive",
+      "outcome": "neutral",
+      "sounds": ["tadUpd03-addon-complete.wav", "tadUPD05-abandoning-auxiliary-structure.wav"],
+      "examples": [
+        "Should I remove this deprecated code?",
+        "Delete these unused imports?",
+        "Clean up this old function?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "analytical",
+      "outcome": "success",
+      "sounds": ["tadUpd02-research-complete.wav"],
+      "examples": [
+        "Found exactly what you need! Want to see details?",
+        "Search successful - explore the 15 results?",
+        "Located the bug! Should I fix it now?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "analytical",
+      "outcome": "problem",
+      "sounds": ["tadErr00-not-enough-minerals.wav", "TAdErr06-not-enough-energy.wav"],
+      "examples": [
+        "Can't find the file - should I search elsewhere?",
+        "Search returned nothing - try different terms?",
+        "Pattern not found - broaden the search?"
+      ]
+    },
+    {
+      "mode": "question",
+      "type": "analytical",
+      "outcome": "neutral",
+      "sounds": ["tadUpd03-addon-complete.wav"],
+      "examples": [
+        "What should I search for?",
+        "Which files should I examine?",
+        "What pattern are you looking for?"
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "constructive",
+      "outcome": "success",
+      "sounds": ["TAdUpd07-nuclear-missile-ready.wav", "tadUPD06-upgrade-complete.wav", "tadUpd02-research-complete.wav"],
+      "examples": [
+        "DEPLOYING TO PRODUCTION!",
+        "All tests passing! Build successful!",
+        "Feature implementation complete!",
+        "Fixed all 10 bugs!"
+      ],
+      "notes": "Multiple sounds for variety since this is a common case"
+    },
+    {
+      "mode": "action",
+      "type": "constructive",
+      "outcome": "problem",
+      "sounds": ["tadUPD04-nuclear-launch-detected.wav", "tadErr01-insufficient-vespene-gas.wav", "tadErr03-landing-sequence-interrupted.wav"],
+      "examples": [
+        "CATASTROPHIC BUILD FAILURE!",
+        "Compilation error in 15 files!",
+        "Tests failing - process interrupted!",
+        "Critical error during deployment!"
+      ],
+      "notes": "nuclear-launch-detected for critical errors, others for normal build failures"
+    },
+    {
+      "mode": "action",
+      "type": "constructive",
+      "outcome": "neutral",
+      "sounds": ["tadUPD06-upgrade-complete.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Implementing feature X...",
+        "Writing tests for component Y...",
+        "Building the authentication module...",
+        "Refactoring the API layer..."
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "destructive",
+      "outcome": "success",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav"],
+      "examples": [
+        "Files deleted successfully!",
+        "Old code removed!",
+        "Cleanup operation complete!",
+        "Removed all deprecated functions!"
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "destructive",
+      "outcome": "problem",
+      "sounds": ["tadErr03-landing-sequence-interrupted.wav", "tadErr02-additional-supply-depots-required.wav", "tadErr04-unacceptable-landing-zone.wav"],
+      "examples": [
+        "Deletion interrupted - file in use!",
+        "Can't remove - dependencies still exist!",
+        "Cleanup failed - prerequisites not met!",
+        "Unable to delete protected files!"
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "destructive",
+      "outcome": "neutral",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav"],
+      "examples": [
+        "Removing old files...",
+        "Cleaning up temporary data...",
+        "Deleting unused components...",
+        "Clearing cache..."
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "analytical",
+      "outcome": "success",
+      "sounds": ["tadUpd02-research-complete.wav"],
+      "examples": [
+        "Search found 50 matching files!",
+        "Analysis complete - found the pattern!",
+        "Successfully located all instances!",
+        "Code exploration finished!"
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "analytical",
+      "outcome": "problem",
+      "sounds": ["tadErr00-not-enough-minerals.wav", "TAdErr06-not-enough-energy.wav"],
+      "examples": [
+        "File not found!",
+        "Search returned no results!",
+        "Can't locate the function!",
+        "Pattern doesn't exist in codebase!"
+      ]
+    },
+    {
+      "mode": "action",
+      "type": "analytical",
+      "outcome": "neutral",
+      "sounds": ["tadUpd02-research-complete.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Searching codebase...",
+        "Reading configuration files...",
+        "Exploring project structure...",
+        "Analyzing dependencies..."
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "constructive",
+      "outcome": "success",
+      "sounds": ["TAdUpd07-nuclear-missile-ready.wav", "tadUpd02-research-complete.wav", "tadUPD06-upgrade-complete.wav"],
+      "examples": [
+        "ALL TESTS PASSED! DEPLOYMENT SUCCESSFUL!",
+        "Successfully implemented the authentication feature!",
+        "Bug fix complete - all edge cases handled!",
+        "Feature deployed and verified working!"
+      ],
+      "notes": "nuclear-missile-ready for major victories, others for normal completions"
+    },
+    {
+      "mode": "report",
+      "type": "constructive",
+      "outcome": "problem",
+      "sounds": ["tadUPD04-nuclear-launch-detected.wav", "tadErr01-insufficient-vespene-gas.wav", "tadErr02-additional-supply-depots-required.wav"],
+      "examples": [
+        "CRITICAL: System completely broken!",
+        "Build failed with 20 errors",
+        "Found 5 critical bugs in production code",
+        "Tests failing - capacity limits exceeded"
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "constructive",
+      "outcome": "neutral",
+      "sounds": ["tadUPD06-upgrade-complete.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Here's what I built for you...",
+        "I've implemented these components...",
+        "The feature includes these parts...",
+        "Created 3 new files with the following structure..."
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "destructive",
+      "outcome": "success",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav"],
+      "examples": [
+        "All deprecated code removed successfully!",
+        "Cleanup complete - deleted 25 unused files!",
+        "Old implementations purged from codebase!",
+        "Successfully removed all legacy code!"
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "destructive",
+      "outcome": "problem",
+      "sounds": ["tadErr02-additional-supply-depots-required.wav", "tadErr04-unacceptable-landing-zone.wav", "tadErr03-landing-sequence-interrupted.wav"],
+      "examples": [
+        "Can't delete - 10 files still depend on it",
+        "Removal blocked - prerequisites not met",
+        "Deletion failed - operation interrupted",
+        "Unable to remove - capacity constraints"
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "destructive",
+      "outcome": "neutral",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Removed these 5 files from the project",
+        "Deleted the following components...",
+        "Cleaned up these directories...",
+        "Here's what was removed..."
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "analytical",
+      "outcome": "success",
+      "sounds": ["tadUpd02-research-complete.wav", "TAdUpd07-nuclear-missile-ready.wav"],
+      "examples": [
+        "Analysis complete! System architecture is well-designed!",
+        "MAJOR DISCOVERY: Found the root cause!",
+        "Research successful - identified the optimal solution!",
+        "Code review finished - everything looks good!"
+      ],
+      "notes": "nuclear-missile-ready for major discoveries/insights"
+    },
+    {
+      "mode": "report",
+      "type": "analytical",
+      "outcome": "problem",
+      "sounds": ["tadUPD04-nuclear-launch-detected.wav", "tadUpd00-base-is-under-attack.wav"],
+      "examples": [
+        "CRITICAL: Found severe security vulnerabilities!",
+        "System analysis reveals major architectural flaws!",
+        "Code review found dangerous memory leaks!",
+        "ALERT: Production code has critical bugs!"
+      ]
+    },
+    {
+      "mode": "report",
+      "type": "analytical",
+      "outcome": "neutral",
+      "sounds": ["tadUpd02-research-complete.wav", "tadUPD06-upgrade-complete.wav", "tadUpd03-addon-complete.wav"],
+      "examples": [
+        "Here's what I found in the codebase...",
+        "Analysis shows the following structure...",
+        "I discovered these patterns...",
+        "The code works like this...",
+        "Found 15 files matching your criteria"
+      ],
+      "notes": "Multiple sounds for variety - this is very common"
+    }
+  ],
+  "default": "tadUpd03-addon-complete.wav",
+  "notes": {
+    "variety": "Multiple sounds per combination prevent boredom for frequent response types",
+    "attention": "question/* combinations use attention-demanding sounds like 'base-is-under-attack'",
+    "destruction": "destructive type primarily uses 'abandoning-auxiliary-structure' for thematic coherence",
+    "completion": "research-complete and upgrade-complete provide satisfying completion sounds",
+    "emergency": "nuclear-launch-detected reserved for catastrophic errors, nuclear-missile-ready for major victories",
+    "coverage": "All 27 combinations mapped, all 14 sounds used multiple times"
+  }
+}
