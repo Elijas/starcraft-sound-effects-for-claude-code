@@ -1,7 +1,7 @@
 {
   "version": "3.0",
   "description": "Direct 14-class semantic mapping for StarCraft sounds",
-  "sound_directory": "/Users/user/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated",
+  "base_path": "/Users/user/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated",
   "sounds": {
     "1": {
       "file": "tadErr00-not-enough-minerals.wav",

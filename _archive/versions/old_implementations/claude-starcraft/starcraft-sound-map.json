@@ -1,0 +1,167 @@
+{
+  "mappings": [
+    {
+      "severity": "error",
+      "magnitude": "major",
+      "context": "destructive",
+      "sounds": ["tadUPD04-nuclear-launch-detected.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "major",
+      "context": "constructive",
+      "sounds": ["tadErr03-landing-sequence-interrupted.wav", "tadErr04-unacceptable-landing-zone.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "major",
+      "context": "neutral",
+      "sounds": ["TAdErr06-not-enough-energy.wav", "tadErr02-additional-supply-depots-required.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "normal",
+      "context": "destructive",
+      "sounds": ["tadErr03-landing-sequence-interrupted.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "normal",
+      "context": "constructive",
+      "sounds": ["tadErr01-insufficient-vespene-gas.wav", "tadErr00-not-enough-minerals.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "normal",
+      "context": "neutral",
+      "sounds": ["tadErr04-unacceptable-landing-zone.wav", "TAdErr06-not-enough-energy.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "minor",
+      "context": "destructive",
+      "sounds": ["tadErr02-additional-supply-depots-required.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "minor",
+      "context": "constructive",
+      "sounds": ["tadErr00-not-enough-minerals.wav"]
+    },
+    {
+      "severity": "error",
+      "magnitude": "minor",
+      "context": "neutral",
+      "sounds": ["tadErr01-insufficient-vespene-gas.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "major",
+      "context": "destructive",
+      "sounds": ["tadUpd00-base-is-under-attack.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "major",
+      "context": "constructive",
+      "sounds": ["TAdUpd07-nuclear-missile-ready.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "major",
+      "context": "neutral",
+      "sounds": ["tadUpd01-your-forces-are-under-attack.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "normal",
+      "context": "destructive",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "normal",
+      "context": "constructive",
+      "sounds": ["TAdErr06-not-enough-energy.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "normal",
+      "context": "neutral",
+      "sounds": ["tadUpd01-your-forces-are-under-attack.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "minor",
+      "context": "destructive",
+      "sounds": ["tadErr02-additional-supply-depots-required.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "minor",
+      "context": "constructive",
+      "sounds": ["tadErr00-not-enough-minerals.wav"]
+    },
+    {
+      "severity": "warning",
+      "magnitude": "minor",
+      "context": "neutral",
+      "sounds": ["tadErr01-insufficient-vespene-gas.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "major",
+      "context": "destructive",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "major",
+      "context": "constructive",
+      "sounds": ["tadUpd02-research-complete.wav", "TAdUpd07-nuclear-missile-ready.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "major",
+      "context": "neutral",
+      "sounds": ["tadUpd02-research-complete.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "normal",
+      "context": "destructive",
+      "sounds": ["tadUPD05-abandoning-auxiliary-structure.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "normal",
+      "context": "constructive",
+      "sounds": ["tadUPD06-upgrade-complete.wav", "tadUpd02-research-complete.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "normal",
+      "context": "neutral",
+      "sounds": ["tadUPD06-upgrade-complete.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "minor",
+      "context": "destructive",
+      "sounds": ["tadUpd03-addon-complete.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "minor",
+      "context": "constructive",
+      "sounds": ["tadUpd03-addon-complete.wav"]
+    },
+    {
+      "severity": "success",
+      "magnitude": "minor",
+      "context": "neutral",
+      "sounds": ["tadUpd03-addon-complete.wav"]
+    }
+  ],
+  "default": "tadUpd03-addon-complete.wav"
+}

@@ -1,0 +1,89 @@
+{
+  "sounds": [
+    {
+      "file": "tadErr00-not-enough-minerals.wav",
+      "category": "error",
+      "description": "Not enough minerals",
+      "contexts": ["resource_error", "missing_dependency", "insufficient_resources", "not_found"]
+    },
+    {
+      "file": "tadErr01-insufficient-vespene-gas.wav",
+      "category": "error",
+      "description": "Insufficient vespene gas",
+      "contexts": ["resource_error", "build_failure", "compilation_error"]
+    },
+    {
+      "file": "tadErr02-additional-supply-depots-required.wav",
+      "category": "error",
+      "description": "Additional supply depots required",
+      "contexts": ["limit_reached", "quota_exceeded", "capacity_error"]
+    },
+    {
+      "file": "tadErr03-landing-sequence-interrupted.wav",
+      "category": "error",
+      "description": "Landing sequence interrupted",
+      "contexts": ["operation_interrupted", "process_blocked", "connection_error"]
+    },
+    {
+      "file": "tadErr04-unacceptable-landing-zone.wav",
+      "category": "error",
+      "description": "Unacceptable landing zone",
+      "contexts": ["prerequisites_missing", "dependency_error", "setup_required"]
+    },
+    {
+      "file": "TAdErr06-not-enough-energy.wav",
+      "category": "error",
+      "description": "Not enough energy",
+      "contexts": ["operation_blocked", "resource_busy", "already_in_progress"]
+    },
+    {
+      "file": "tadUpd00-base-is-under-attack.wav",
+      "category": "update",
+      "description": "Base is under attack",
+      "contexts": ["urgent_attention", "warning", "alert"]
+    },
+    {
+      "file": "tadUpd01-your-forces-are-under-attack.wav",
+      "category": "update",
+      "description": "Your forces are under attack",
+      "contexts": ["warning", "issue_detected", "action_needed"]
+    },
+    {
+      "file": "tadUpd02-research-complete.wav",
+      "category": "update",
+      "description": "Research complete",
+      "contexts": ["completed", "finished", "task_done", "success"]
+    },
+    {
+      "file": "tadUpd03-addon-complete.wav",
+      "category": "update",
+      "description": "Addon complete",
+      "contexts": ["success", "completed", "positive_response"]
+    },
+    {
+      "file": "tadUPD04-nuclear-launch-detected.wav",
+      "category": "update",
+      "description": "Nuclear launch detected",
+      "contexts": ["critical_error", "severe_warning", "catastrophic_failure"]
+    },
+    {
+      "file": "tadUPD05-abandoning-auxiliary-structure.wav",
+      "category": "update",
+      "description": "Abandoning auxiliary structure",
+      "contexts": ["removing", "deleting", "cleanup"]
+    },
+    {
+      "file": "tadUPD06-upgrade-complete.wav",
+      "category": "update",
+      "description": "Upgrade complete",
+      "contexts": ["continue", "next_step", "moving_forward", "updated"]
+    },
+    {
+      "file": "TAdUpd07-nuclear-missile-ready.wav",
+      "category": "update",
+      "description": "Nuclear missile ready",
+      "contexts": ["ready", "standing_by", "awaiting_input", "prepared"]
+    }
+  ],
+  "base_path": "/Users/user/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated"
+}
