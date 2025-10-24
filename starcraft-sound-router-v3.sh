@@ -92,27 +92,30 @@ classify_with_claude() {
         return
     fi
 
-    # Prepare the token-efficient prompt
-    local prompt="Classify this AI assistant message into ONE of 14 classes:
+    # Prepare the crisp classification prompt
+    local prompt="Classify this Claude Code assistant response by its semantic outcome.
 
+Classes:
 1=Need clarification (ambiguous request)
 2=Need resources (missing files/access)
 3=Need selection (multiple options)
 4=Cannot locate (search failed)
-5=Routine complete (small task done)
-6=Milestone complete (major task done)
-7=Discovery complete (found/analyzed)
+5=Routine complete (small task)
+6=Milestone complete (major task)
+7=Discovery complete (found/analyzed info)
 8=Removal complete (deleted/cleaned)
-9=Optimal achievement (exceptional success)
+9=Optimal achievement (best result)
 10=Partial completion (mostly done)
 11=Problems discovered (found issues)
 12=Operation failing (current errors)
 13=Critical failure (emergency)
 14=Request impossible (cannot do)
 
-Message: ${message:0:500}
+<claude_code_response>
+${message:0:500}
+</claude_code_response>
 
-Return ONLY: {\"class\": N}"
+Return only: {\"class\": N}"
 
     # Call Claude API
     local response=$(curl -s -X POST https://api.anthropic.com/v1/messages \
