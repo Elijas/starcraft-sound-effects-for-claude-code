@@ -28,21 +28,23 @@ fi
 # Read JSON hook input from stdin
 HOOK_INPUT=$(cat)
 
-# Extract transcript path from hook input
-TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcriptPath // empty')
+# Extract transcript path from hook input (supports both camelCase and snake_case)
+TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcriptPath // .transcript_path // empty')
 
 if [ -z "$TRANSCRIPT_PATH" ]; then
     log_message "ERROR: No transcript path in hook input"
     exit 0  # Exit silently
 fi
 
-# Get the last assistant message from transcript
-ASSISTANT_MESSAGE=$(jq -r '
-    .messages[-1] |
-    select(.role == "assistant") |
-    .content[-1] |
-    select(.type == "text") |
-    .text // empty
+# Get the last assistant message from transcript (JSONL format - one JSON object per line)
+ASSISTANT_MESSAGE=$(jq -s '
+    [.[] | select(.role == "assistant" or (.message and .message.role == "assistant"))] |
+    if length > 0 then
+        last |
+        .content[-1].text // .message.content[-1].text // empty
+    else
+        empty
+    end
 ' "$TRANSCRIPT_PATH" 2>/dev/null)
 
 if [ -z "$ASSISTANT_MESSAGE" ]; then
