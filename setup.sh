@@ -43,7 +43,31 @@ echo
 
 # Step 2: Check for sound files
 echo -e "${YELLOW}Step 2: Checking sound files...${NC}"
-SOUND_DIR="/Users/$(whoami)/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated"
+# Load SOUND_DIR from .env if it exists
+if [ -f "$ENV_FILE" ]; then
+    source "$ENV_FILE"
+fi
+
+# Use default path only as a suggestion, not as actual value
+DEFAULT_SOUND_PATH="/Users/$(whoami)/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated"
+
+if [ -z "${SOUND_DIR:-}" ]; then
+    echo "SOUND_DIR is not configured in .env file."
+    echo "Suggested default path: $DEFAULT_SOUND_PATH"
+    echo
+    echo "Would you like to use this path? (y/n)"
+    read -r USE_DEFAULT
+    if [[ "$USE_DEFAULT" == "y" ]]; then
+        SOUND_DIR="$DEFAULT_SOUND_PATH"
+        echo "SOUND_DIR=$SOUND_DIR" >> "$ENV_FILE"
+        echo -e "${GREEN}✓ Added SOUND_DIR to .env${NC}"
+    else
+        echo "Please enter your sound directory path:"
+        read -r SOUND_DIR
+        echo "SOUND_DIR=$SOUND_DIR" >> "$ENV_FILE"
+        echo -e "${GREEN}✓ Added SOUND_DIR to .env${NC}"
+    fi
+fi
 
 if [ -d "$SOUND_DIR" ] && [ "$(ls -A "$SOUND_DIR"/*.wav 2>/dev/null | wc -l)" -ge 14 ]; then
     echo -e "${GREEN}✓ Sound files found at default location${NC}"
@@ -61,9 +85,15 @@ else
         echo "Enter the full path to your sound files directory:"
         read -r CUSTOM_SOUND_DIR
         if [ -d "$CUSTOM_SOUND_DIR" ]; then
-            # Update the JSON file
-            jq --arg dir "$CUSTOM_SOUND_DIR" '.sound_directory = $dir' "$SCRIPT_DIR/starcraft-sounds.json" > tmp.json && mv tmp.json "$SCRIPT_DIR/starcraft-sounds.json"
-            echo -e "${GREEN}✓ Updated sound directory path${NC}"
+            # Update or add SOUND_DIR in .env file
+            if grep -q "^SOUND_DIR=" "$ENV_FILE" 2>/dev/null; then
+                # Update existing SOUND_DIR
+                sed -i.bak "s|^SOUND_DIR=.*|SOUND_DIR=$CUSTOM_SOUND_DIR|" "$ENV_FILE"
+            else
+                # Add SOUND_DIR to .env
+                echo "SOUND_DIR=$CUSTOM_SOUND_DIR" >> "$ENV_FILE"
+            fi
+            echo -e "${GREEN}✓ Updated sound directory path in .env${NC}"
         else
             echo -e "${RED}✗ Directory not found: $CUSTOM_SOUND_DIR${NC}"
         fi

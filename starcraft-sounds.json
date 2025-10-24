@@ -1,86 +1,16 @@
 {
-  "version": "3.0",
-  "description": "Direct 14-class semantic mapping for StarCraft sounds",
-  "base_path": "/Users/user/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated",
-  "sounds": {
-    "1": {
-      "file": "tadErr00-not-enough-minerals.wav",
-      "class": "Need clarification",
-      "description": "Ambiguous request, need more details"
-    },
-    "2": {
-      "file": "tadErr01-insufficient-vespene-gas.wav",
-      "class": "Need permissions",
-      "description": "Missing API key, credentials, or file access"
-    },
-    "3": {
-      "file": "tadErr02-additional-supply-depots-required.wav",
-      "class": "Need user choice",
-      "description": "Multiple valid options, user must decide"
-    },
-    "4": {
-      "file": "TAdErr06-not-enough-energy.wav",
-      "class": "Search failed",
-      "description": "Could not find file, function, or pattern"
-    },
-    "5": {
-      "file": "tadUpd03-addon-complete.wav",
-      "class": "Simple edit done",
-      "description": "Single file edited, minor change, comment added"
-    },
-    "6": {
-      "file": "tadUPD06-upgrade-complete.wav",
-      "class": "Feature complete",
-      "description": "Function implemented, bug fixed, refactor done"
-    },
-    "7": {
-      "file": "tadUpd02-research-complete.wav",
-      "class": "Analysis complete",
-      "description": "Code explained, files read, search completed"
-    },
-    "8": {
-      "file": "tadUPD05-abandoning-auxiliary-structure.wav",
-      "class": "Cleanup complete",
-      "description": "Files deleted, code removed, dependencies cleaned"
-    },
-    "9": {
-      "file": "TAdUpd07-nuclear-missile-ready.wav",
-      "class": "Deployed successfully",
-      "description": "Git pushed, package published, tests all pass"
-    },
-    "10": {
-      "file": "tadErr03-landing-sequence-interrupted.wav",
-      "class": "Partially done",
-      "description": "Most tasks complete but some remaining"
-    },
-    "11": {
-      "file": "tadUpd00-base-is-under-attack.wav",
-      "class": "Issues found",
-      "description": "Warnings, lint errors, or bugs discovered"
-    },
-    "12": {
-      "file": "tadUpd01-your-forces-are-under-attack.wav",
-      "class": "Tests failing",
-      "description": "Test failures, build errors, type errors"
-    },
-    "13": {
-      "file": "tadUPD04-nuclear-launch-detected.wav",
-      "class": "System broken",
-      "description": "Can't compile, repo corrupted, major crash"
-    },
-    "14": {
-      "file": "tadErr04-unacceptable-landing-zone.wav",
-      "class": "Cannot proceed",
-      "description": "Impossible request, out of scope, blocked"
-    }
-  },
-  "default_class": 5,
-  "statistics": {
-    "total_classes": 14,
-    "user_action_required": [1, 2, 3, 4],
-    "completion_states": [5, 6, 7, 8, 9],
-    "partial": [10],
-    "problem_states": [11, 12, 13],
-    "blocker": [14]
-  }
+  "1": "tadErr00-not-enough-minerals.wav",
+  "2": "tadErr01-insufficient-vespene-gas.wav",
+  "3": "tadErr02-additional-supply-depots-required.wav",
+  "4": "TAdErr06-not-enough-energy.wav",
+  "5": "tadUpd03-addon-complete.wav",
+  "6": "tadUPD06-upgrade-complete.wav",
+  "7": "tadUpd02-research-complete.wav",
+  "8": "tadUPD05-abandoning-auxiliary-structure.wav",
+  "9": "TAdUpd07-nuclear-missile-ready.wav",
+  "10": "tadErr03-landing-sequence-interrupted.wav",
+  "11": "tadUpd00-base-is-under-attack.wav",
+  "12": "tadUpd01-your-forces-are-under-attack.wav",
+  "13": "tadUPD04-nuclear-launch-detected.wav",
+  "14": "tadErr04-unacceptable-landing-zone.wav"
 }

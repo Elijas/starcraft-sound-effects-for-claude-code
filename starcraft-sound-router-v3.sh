@@ -11,19 +11,31 @@ SOUND_MAP_FILE="${SCRIPT_DIR}/starcraft-sounds.json"
 LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_CLASS=5
+ENABLE_LOGGING=false  # Set to true to enable logging
 
-# Sound directory from JSON config
-SOUND_DIR="/Users/user/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated"
-
-# Logging function
-log_message() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
-}
-
-# Load environment variables if .env exists
-if [ -f "$ENV_FILE" ]; then
-    export $(grep -v '^#' "$ENV_FILE" | xargs)
+# Load environment variables - required
+if [ ! -f "$ENV_FILE" ]; then
+    echo "ERROR: Missing .env file. Please copy .env.example to .env and configure it." >&2
+    exit 1
 fi
+export $(grep -v '^#' "$ENV_FILE" | xargs)
+
+# Check required environment variables
+if [ -z "${SOUND_DIR:-}" ]; then
+    echo "ERROR: SOUND_DIR not set in .env file" >&2
+    exit 1
+fi
+
+if [ ! -d "$SOUND_DIR" ]; then
+    echo "ERROR: Sound directory not found: $SOUND_DIR" >&2
+    exit 1
+fi
+
+# Logging function (only logs if enabled)
+log_message() {
+    [ "$ENABLE_LOGGING" = true ] && echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
+    return 0
+}
 
 # Read JSON hook input from stdin
 HOOK_INPUT=$(cat)
@@ -65,7 +77,7 @@ play_sound_for_class() {
     local class_id="$1"
 
     # Get sound file for this class
-    local sound_file=$(jq -r ".sounds.\"$class_id\".file // empty" "$SOUND_MAP_FILE")
+    local sound_file=$(jq -r ".\"$class_id\" // empty" "$SOUND_MAP_FILE")
 
     if [ -z "$sound_file" ]; then
         log_message "WARNING: No sound mapped for class $class_id"
@@ -125,7 +137,7 @@ Classes:
 6=Feature complete (function/bug fix/refactor)
 7=Analysis complete (code explained/files read)
 8=Cleanup complete (deleted/removed code)
-9=Deployed successfully (git push/tests pass)
+9=Deployed successfully (git push/tests pass/exploration sealed)
 10=Partially done (most complete, some remain)
 11=Issues found (warnings/lint errors discovered)
 12=Tests failing (build/type/test errors)
@@ -175,8 +187,24 @@ main() {
     # Classify the message
     CLASS=$(classify_with_claude "$ASSISTANT_MESSAGE")
 
-    # Log the classification
-    local class_name=$(jq -r ".sounds.\"$CLASS\".class // \"Unknown\"" "$SOUND_MAP_FILE")
+    # Log the classification with simple names
+    case "$CLASS" in
+        1) class_name="Need clarification" ;;
+        2) class_name="Need permissions" ;;
+        3) class_name="Need user choice" ;;
+        4) class_name="Search failed" ;;
+        5) class_name="Simple edit done" ;;
+        6) class_name="Feature complete" ;;
+        7) class_name="Analysis complete" ;;
+        8) class_name="Cleanup complete" ;;
+        9) class_name="Deployed successfully" ;;
+        10) class_name="Partially done" ;;
+        11) class_name="Issues found" ;;
+        12) class_name="Tests failing" ;;
+        13) class_name="System broken" ;;
+        14) class_name="Cannot proceed" ;;
+        *) class_name="Unknown" ;;
+    esac
     log_message "Classified as: $CLASS - $class_name"
 
     # Play the corresponding sound
