@@ -117,20 +117,20 @@ ${message: -$last_chars}"
     local prompt="Classify this Claude Code assistant response by its semantic outcome.
 
 Classes:
-1=Need clarification (ambiguous request)
-2=Need resources (missing files/access)
-3=Need selection (multiple options)
-4=Cannot locate (search failed)
-5=Routine complete (small task)
-6=Milestone complete (major task)
-7=Discovery complete (found/analyzed info)
-8=Removal complete (deleted/cleaned)
-9=Optimal achievement (best result)
-10=Partial completion (mostly done)
-11=Problems discovered (found issues)
-12=Operation failing (current errors)
-13=Critical failure (emergency)
-14=Request impossible (cannot do)
+1=Need clarification (ambiguous, need details)
+2=Need permissions (missing API key/credentials)
+3=Need user choice (multiple valid options)
+4=Search failed (couldn't find file/function)
+5=Simple edit done (single file, minor change)
+6=Feature complete (function/bug fix/refactor)
+7=Analysis complete (code explained/files read)
+8=Cleanup complete (deleted/removed code)
+9=Deployed successfully (git push/tests pass)
+10=Partially done (most complete, some remain)
+11=Issues found (warnings/lint errors discovered)
+12=Tests failing (build/type/test errors)
+13=System broken (can't compile/repo corrupt)
+14=Cannot proceed (impossible/out of scope)
 
 <claude_code_response>
 $truncated_message
