@@ -52,8 +52,12 @@ if [ -z "$ASSISTANT_MESSAGE" ]; then
     exit 0  # Exit silently
 fi
 
-# Truncate message for logging (first 100 chars)
-MESSAGE_PREVIEW="${ASSISTANT_MESSAGE:0:100}..."
+# Smart truncate message for logging (first 60 + last 40 chars if too long)
+if [ "${#ASSISTANT_MESSAGE}" -le 100 ]; then
+    MESSAGE_PREVIEW="$ASSISTANT_MESSAGE"
+else
+    MESSAGE_PREVIEW="${ASSISTANT_MESSAGE:0:60}[...]${ASSISTANT_MESSAGE: -40}"
+fi
 log_message "Processing message: $MESSAGE_PREVIEW"
 
 # Function to play sound for a given class
@@ -92,6 +96,23 @@ classify_with_claude() {
         return
     fi
 
+    # Smart truncation: capture beginning and end if message is too long
+    local truncated_message=""
+    local msg_length=${#message}
+    local first_chars=300
+    local last_chars=200
+    local max_total=$((first_chars + last_chars))
+
+    if [ "$msg_length" -le "$max_total" ]; then
+        # Message is short enough, use it all
+        truncated_message="$message"
+    else
+        # Message is too long, take beginning and end
+        truncated_message="${message:0:$first_chars}
+[...]
+${message: -$last_chars}"
+    fi
+
     # Prepare the crisp classification prompt
     local prompt="Classify this Claude Code assistant response by its semantic outcome.
 
@@ -112,7 +133,7 @@ Classes:
 14=Request impossible (cannot do)
 
 <claude_code_response>
-${message:0:500}
+$truncated_message
 </claude_code_response>
 
 Return only: {\"class\": N}"
