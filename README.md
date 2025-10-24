@@ -9,11 +9,11 @@ Ever wished you could instantly *hear* what type of response Claude just gave yo
 | Sound | When You'll Hear It | Example Response |
 |-------|-------------------|------------------|
 | **"Not enough minerals"** | Claude needs clarification | "Which file did you mean?" |
-| **"Insufficient vespene gas"** | Claude needs resources | "Please provide the API key" |
+| **"Insufficient vespene gas"** | Claude needs permissions | "Missing API key or credentials" |
 | **"Your base is under attack"** | Problems found in your code | "Found 3 bugs in your implementation" |
-| **"Nuclear missile ready"** | Major success! | "All tests passing! Deploy ready!" |
-| **"Nuclear launch detected"** | Critical failure | "PRODUCTION IS DOWN!" |
-| **"Research complete"** | Discovery/analysis done | "Found the root cause" |
+| **"Nuclear missile ready"** | Major success! | "Git pushed! Tests passing! Deployed!" |
+| **"Nuclear launch detected"** | System broken | "Can't compile! Repo corrupted!" |
+| **"Research complete"** | Analysis done | "Found the root cause" |
 
 ...and 8 more semantic mappings that make your coding session feel like commanding a Terran base!
 
@@ -24,7 +24,7 @@ Ever wished you could instantly *hear* what type of response Claude just gave yo
 1. **Claude Code** (Anthropic's official Claude desktop app)
 2. **macOS** (uses `afplay` for audio - Linux/Windows support coming soon)
 3. **StarCraft sound files** (see [Getting Sounds](#getting-sounds) section)
-4. **Anthropic API Key** (for AI classification)
+4. **Anthropic API Key** ([Get one here](https://console.anthropic.com/))
 
 ### Installation
 
@@ -34,38 +34,52 @@ git clone https://github.com/Elijas/starcraft-sound-effects-for-claude-code.git
 cd starcraft-sound-effects-for-claude-code
 ```
 
-2. Set up your environment:
+2. Run the setup script:
 ```bash
-# Create .env file with your API key
-echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
+./setup.sh
 ```
 
-3. Get the StarCraft sounds (see [Getting Sounds](#getting-sounds) section)
+This will:
+- Create your `.env` file from template
+- Configure your API key
+- Set up your sound directory path
+- Test the API connection
+- Update Claude Code settings
 
-4. Configure Claude Code:
+That's it! Restart Claude Code and you're ready to go.
+
+### Manual Setup
+
+If you prefer manual configuration:
+
+1. Copy the environment template:
 ```bash
-# Update Claude settings to use this system
-# Add to ~/.claude/settings.json:
+cp .env.example .env
+```
+
+2. Edit `.env` with your settings:
+```bash
+ANTHROPIC_API_KEY=your-api-key-here
+SOUND_DIR=/path/to/starcraft/sounds
+```
+
+3. Update Claude settings (`~/.claude/settings.json`):
+```json
 {
   "hooks": {
     "Stop": [{
       "hooks": [{
         "type": "command",
-        "command": "/path/to/starcraft-sound-effects-for-claude-code/starcraft-sound-router-v3.sh"
+        "command": "/path/to/starcraft-sound-router.sh"
       }]
     }]
   }
 }
 ```
 
-5. Validate your setup:
-```bash
-./validate-sound-map-v3.sh
-```
-
 ## 🎵 Getting Sounds
 
-1. **Search online for**: "StarCraft unit sounds zip"
+1. **Search online for**: "StarCraft Brood War Terran Advisor sounds"
 2. **You need these 14 files**:
    - `tadErr00-not-enough-minerals.wav`
    - `tadErr01-insufficient-vespene-gas.wav`
@@ -82,9 +96,7 @@ echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
    - `tadUPD04-nuclear-launch-detected.wav`
    - `tadErr04-unacceptable-landing-zone.wav`
 
-3. **Place them in**: `/Users/[username]/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated/`
-
-   Or update the path in `starcraft-sounds.json` to your location.
+3. **Place them in** the directory you specify in `.env`
 
 ## 🧠 How It Works
 
@@ -94,85 +106,84 @@ The system uses AI to classify Claude's responses into 14 semantic categories:
 
 | ID | Class | Sound | Meaning |
 |----|-------|-------|---------|
-| 1 | Need clarification | Not enough minerals | Ambiguous request |
-| 2 | Need resources | Insufficient vespene gas | Missing files/access |
-| 3 | Need selection | Additional supply depots required | Multiple options |
-| 4 | Cannot locate | Not enough energy | Search failed |
-| 5 | Routine complete | Addon complete | Small task done |
-| 6 | Milestone complete | Upgrade complete | Major task done |
-| 7 | Discovery complete | Research complete | Found/analyzed |
-| 8 | Removal complete | Abandoning auxiliary structure | Deleted/cleaned |
-| 9 | Optimal achievement | Nuclear missile ready | Exceptional success |
-| 10 | Partial completion | Landing sequence interrupted | Mostly done |
-| 11 | Problems discovered | Your base is under attack | Found issues |
-| 12 | Operation failing | Your forces are under attack | Current errors |
-| 13 | Critical failure | Nuclear launch detected | Emergency |
-| 14 | Request impossible | Unacceptable landing zone | Cannot do |
+| 1 | Need clarification | Not enough minerals | Ambiguous, need details |
+| 2 | Need permissions | Insufficient vespene gas | Missing API key/credentials |
+| 3 | Need user choice | Additional supply depots required | Multiple valid options |
+| 4 | Search failed | Not enough energy | Couldn't find file/function |
+| 5 | Simple edit done | Addon complete | Single file, minor change |
+| 6 | Feature complete | Upgrade complete | Function/bug fix/refactor |
+| 7 | Analysis complete | Research complete | Code explained/files read |
+| 8 | Cleanup complete | Abandoning auxiliary structure | Deleted/removed code |
+| 9 | Deployed successfully | Nuclear missile ready | Git push/tests pass/exploration sealed |
+| 10 | Partially done | Landing sequence interrupted | Most complete, some remain |
+| 11 | Issues found | Your base is under attack | Warnings/lint errors discovered |
+| 12 | Tests failing | Your forces are under attack | Build/type/test errors |
+| 13 | System broken | Nuclear launch detected | Can't compile/repo corrupt |
+| 14 | Cannot proceed | Unacceptable landing zone | Impossible/out of scope |
 
 ### Technical Architecture
 
-1. **Hook Integration**: Integrates with Claude Code's `assistant-response-stop` hook
-2. **AI Classification**: Uses Claude Haiku API to classify responses (token-efficient prompt)
+1. **Hook Integration**: Integrates with Claude Code's `Stop` hook
+2. **AI Classification**: Uses Claude Haiku API to classify responses
 3. **Sound Playback**: Maps classification to sound file and plays via `afplay`
-4. **Fallback**: Defaults to "addon complete" if classification fails
+4. **Logging**: Disabled by default (set `ENABLE_LOGGING=true` in script to enable)
 
 ### Performance
 
 - **API Cost**: ~0.001¢ per classification (uses Claude Haiku with minimal tokens)
 - **Latency**: < 500ms typical (API call + sound playback)
-- **Reliability**: Falls back gracefully if API is unavailable
+- **Reliability**: Fails explicitly if .env not configured (no silent failures)
 
 ## 📁 Repository Structure
 
 ```
 starcraft-sound-effects-for-claude-code/
-├── README.md                        # This file
-├── SOUND-MAPPING-SYSTEM.md          # Detailed documentation
-├── starcraft-sounds.json            # Sound mappings configuration
-├── starcraft-sound-router-v3.sh     # Main router script
-├── validate-sound-map-v3.sh         # Setup validator
-├── .env                             # API key (create this)
-├── .gitignore                       # Excludes .env and sounds
-└── _old_versions/                   # Previous iterations for reference
-    ├── claude-starcraft/            # v1/v2 implementation
-    └── test scripts                 # Testing utilities
+├── README.md                    # This file
+├── starcraft-sounds.json        # Simple class→sound mappings
+├── starcraft-sound-router.sh    # Main router script
+├── setup.sh                     # Interactive setup script
+├── .env.example                 # Environment template
+├── .env                         # Your configuration (git ignored)
+├── .gitignore                   # Excludes .env and sounds
+└── _archive/                    # Old versions and docs
 ```
 
 ## 🛠️ Configuration
 
-### Custom Sound Directory
+### Environment Variables
 
-Edit `starcraft-sounds.json`:
-```json
-{
-  "sound_directory": "/your/custom/path/to/sounds"
-}
+All configuration is in `.env`:
+```bash
+ANTHROPIC_API_KEY=sk-ant-api03-...  # Your API key
+SOUND_DIR=/path/to/sounds           # Path to sound files
 ```
-
-### Adjust Classification Sensitivity
-
-The system uses temperature 0.3 for consistent classification. Adjust in `starcraft-sound-router-v3.sh` if needed.
 
 ### Logging
 
-All activity is logged to `router.log` for debugging.
+Logging is disabled by default. To enable, edit `starcraft-sound-router.sh`:
+```bash
+ENABLE_LOGGING=true  # Set to true to enable logging
+```
+
+Logs are written to `router.log`.
 
 ## 🐛 Troubleshooting
 
 ### No Sound Playing
-1. Check `router.log` for errors
-2. Verify sound files exist: `./validate-sound-map-v3.sh`
+1. Check if `.env` exists and is configured
+2. Verify sound files exist in `SOUND_DIR`
 3. Test audio: `afplay /path/to/any/sound.wav`
+4. Enable logging to debug issues
 
 ### Wrong Classifications
 - The AI might misclassify edge cases
-- Check `router.log` to see what class was assigned
-- Falls back to class 5 (addon complete) if unsure
+- Enable logging to see what class was assigned
+- System is designed to handle all response types
 
 ### API Issues
 - Verify `ANTHROPIC_API_KEY` in `.env`
 - Check API quota at console.anthropic.com
-- System works without API (defaults to class 5)
+- Run `./setup.sh` to test API connection
 
 ## 🎮 Why StarCraft?
 
