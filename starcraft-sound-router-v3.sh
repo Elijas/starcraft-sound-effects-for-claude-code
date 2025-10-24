@@ -99,8 +99,8 @@ classify_with_claude() {
     # Smart truncation: capture beginning and end if message is too long
     local truncated_message=""
     local msg_length=${#message}
-    local first_chars=300
-    local last_chars=200
+    local first_chars=1000
+    local last_chars=1000
     local max_total=$((first_chars + last_chars))
 
     if [ "$msg_length" -le "$max_total" ]; then
