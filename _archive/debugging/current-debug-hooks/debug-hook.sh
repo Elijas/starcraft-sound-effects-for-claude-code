@@ -1,99 +1,98 @@
 #!/bin/bash
 
-# Comprehensive Debug Hook
-# Captures all hook data and calls the production router with logging
+# Debug Hook - Wrapper around production router
+# Logs debug info to gitignored directory only
+# Calls production router to play sounds
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEBUG_LOG="${SCRIPT_DIR}/debug.log"
-DEBUG_INPUT="${SCRIPT_DIR}/hook-input.json"
-DEBUG_TRANSCRIPT="${SCRIPT_DIR}/transcript-capture.json"
-ROUTER_LOG="${SCRIPT_DIR}/router-execution.log"
+LOG_DIR="${SCRIPT_DIR}/logs"
+DEBUG_LOG="${LOG_DIR}/debug.log"
+DEBUG_INPUT="${LOG_DIR}/hook-input.json"
+DEBUG_TRANSCRIPT="${LOG_DIR}/transcript-capture.json"
 
-# Initialize log
+# Create logs directory (gitignored)
+mkdir -p "$LOG_DIR"
+
+# Capture stdin
+HOOK_INPUT=$(cat)
+
+# Log only to gitignored directory
 {
     echo "=========================================="
     echo "Hook triggered at: $(date '+%Y-%m-%d %H:%M:%S')"
     echo "=========================================="
-} >> "$DEBUG_LOG"
-
-# Capture stdin
-HOOK_INPUT=$(cat)
-echo "$HOOK_INPUT" > "$DEBUG_INPUT"
-
-{
-    echo "HOOK INPUT RECEIVED:"
+    echo ""
+    echo "HOOK INPUT:"
     echo "$HOOK_INPUT" | jq . 2>/dev/null || echo "$HOOK_INPUT"
     echo ""
-} >> "$DEBUG_LOG"
+} > "$DEBUG_LOG"
+
+# Save input JSON
+echo "$HOOK_INPUT" > "$DEBUG_INPUT"
 
 # Extract transcript path
 TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcriptPath // .transcript_path // empty' 2>/dev/null || echo "")
 
 {
-    echo "Extracted transcript path: $TRANSCRIPT_PATH"
-    echo "Transcript exists: $([ -f "$TRANSCRIPT_PATH" ] && echo "YES" || echo "NO")"
-} >> "$DEBUG_LOG"
+    echo "Transcript path: $TRANSCRIPT_PATH"
+    if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
+        echo "Transcript exists: YES"
+        cp "$TRANSCRIPT_PATH" "$DEBUG_TRANSCRIPT" 2>/dev/null || true
 
-# Capture transcript if it exists
-if [ -n "$TRANSCRIPT_PATH" ] && [ -f "$TRANSCRIPT_PATH" ]; then
-    cp "$TRANSCRIPT_PATH" "$DEBUG_TRANSCRIPT" 2>/dev/null || true
-
-    {
-        echo "Transcript copied to: $DEBUG_TRANSCRIPT"
-        echo "Last 10 lines of transcript:"
-        tail -10 "$TRANSCRIPT_PATH"
         echo ""
-    } >> "$DEBUG_LOG"
-fi
-
-# Call production router and capture output
-{
-    echo "Calling production router..."
-    echo "Command: echo '\$HOOK_INPUT' | /Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sound-router-v3.sh"
-    echo ""
-} >> "$DEBUG_LOG"
-
-ROUTER_OUTPUT=$(echo "$HOOK_INPUT" | /Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sound-router-v3.sh 2>&1 || true)
-
-{
-    echo "Router output:"
-    echo "$ROUTER_OUTPUT"
-    echo ""
-    echo "Router exit code: $?"
-    echo ""
-} >> "$DEBUG_LOG"
-
-# Check if sound files exist
-{
-    echo "========== SOUND FILE VERIFICATION =========="
-    SOUND_JSON="/Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sounds.json"
-    if [ -f "$SOUND_JSON" ]; then
-        SOUND_DIR=$(jq -r '.base_path // empty' "$SOUND_JSON" 2>/dev/null || echo "")
-        echo "Sound directory from JSON: $SOUND_DIR"
-        echo "Sound directory exists: $([ -d "$SOUND_DIR" ] && echo "YES" || echo "NO")"
-
-        if [ -d "$SOUND_DIR" ]; then
-            echo "Number of .wav files in sound directory: $(find "$SOUND_DIR" -name "*.wav" | wc -l)"
-            echo "First 5 sound files:"
-            find "$SOUND_DIR" -name "*.wav" | head -5
-        fi
+        echo "Last assistant message in transcript:"
+        jq -r '
+            [.[] | select(.role == "assistant" or (.message.role == "assistant"))] |
+            last |
+            .content[-1].text // .message.content[-1].text // "NO TEXT FOUND"
+        ' "$TRANSCRIPT_PATH" 2>/dev/null || echo "FAILED TO PARSE"
+    else
+        echo "Transcript exists: NO"
     fi
     echo ""
 } >> "$DEBUG_LOG"
 
-# Display log summary
-echo ""
-echo "========== DEBUG INFO CAPTURED =========="
-echo "Debug log: $DEBUG_LOG"
-echo "Hook input: $DEBUG_INPUT"
-if [ -f "$DEBUG_TRANSCRIPT" ]; then
-    echo "Transcript: $DEBUG_TRANSCRIPT"
-fi
-echo "=========================================="
-echo ""
-echo "Last 20 lines of debug log:"
-tail -20 "$DEBUG_LOG"
+# Call production router and capture output
+{
+    echo "Running production router..."
+    echo "Command: /Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sound-router-v3.sh"
+    echo ""
+} >> "$DEBUG_LOG"
+
+ROUTER_OUTPUT=$(echo "$HOOK_INPUT" | /Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sound-router-v3.sh 2>&1 || true)
+ROUTER_EXIT=$?
+
+{
+    echo "Router stdout:"
+    echo "$ROUTER_OUTPUT"
+    echo ""
+    echo "Router exit code: $ROUTER_EXIT"
+    echo ""
+    echo "========== DIAGNOSTIC INFO =========="
+
+    SOUND_JSON="/Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sounds.json"
+    if [ -f "$SOUND_JSON" ]; then
+        SOUND_DIR=$(jq -r '.base_path // empty' "$SOUND_JSON" 2>/dev/null || echo "")
+        echo "Sound directory: $SOUND_DIR"
+        if [ -d "$SOUND_DIR" ]; then
+            echo "Sound dir exists: YES"
+            echo "Sound files count: $(find "$SOUND_DIR" -name "*.wav" 2>/dev/null | wc -l)"
+        else
+            echo "Sound dir exists: NO"
+        fi
+    fi
+
+    echo ""
+    echo "Router log file:"
+    ROUTER_LOG="/Users/user/Development/starcraft-sound-effects-for-claude-code/router.log"
+    if [ -f "$ROUTER_LOG" ]; then
+        tail -20 "$ROUTER_LOG"
+    else
+        echo "Router log file not found"
+    fi
+    echo ""
+} >> "$DEBUG_LOG"
 
 exit 0
