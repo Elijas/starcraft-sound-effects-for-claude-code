@@ -1,0 +1,16 @@
+{
+  "1": "tadErr00-not-enough-minerals.wav",
+  "2": "tadErr01-insufficient-vespene-gas.wav",
+  "3": "tadErr02-additional-supply-depots-required.wav",
+  "4": "TAdErr06-not-enough-energy.wav",
+  "5": "tadUpd03-addon-complete.wav",
+  "6": "tadUPD06-upgrade-complete.wav",
+  "7": "tadUpd02-research-complete.wav",
+  "8": "tadUPD05-abandoning-auxiliary-structure.wav",
+  "9": "TAdUpd07-nuclear-missile-ready.wav",
+  "10": "tadErr03-landing-sequence-interrupted.wav",
+  "11": "tadUpd00-base-is-under-attack.wav",
+  "12": "tadUpd01-your-forces-are-under-attack.wav",
+  "13": "tadUPD04-nuclear-launch-detected.wav",
+  "14": "tadErr04-unacceptable-landing-zone.wav"
+}

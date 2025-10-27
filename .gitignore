@@ -1,4 +1,5 @@
 *.json
+!starcraft-sounds.json
 *.jsonl
 
 # Byte-compiled / optimized / DLL files
@@ -212,7 +213,6 @@ __marimo__/
 # StarCraft Sound Effects specific
 *.wav
 *.mp3
-*.json
 router.log
 sounds/
 /sounds/
