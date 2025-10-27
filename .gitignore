@@ -209,6 +209,7 @@ __marimo__/
 # StarCraft Sound Effects specific
 *.wav
 *.mp3
+*.json
 router.log
 sounds/
 /sounds/
@@ -216,6 +217,4 @@ sounds/
 # Archive artifacts and logs (for debugging and legacy content)
 _archive/logs/
 _archive/debugging/current-debug-hooks/debug.log
-_archive/debugging/current-debug-hooks/hook-input.json
-_archive/debugging/current-debug-hooks/transcript-capture.json
 _archive/debugging/current-debug-hooks/router-execution.log
