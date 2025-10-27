@@ -49,11 +49,17 @@ if [ -z "$TRANSCRIPT_PATH" ]; then
 fi
 
 # Get the last assistant message from transcript (JSONL format - one JSON object per line)
+# Find the last assistant message that HAS text content (skip tool-only messages)
 ASSISTANT_MESSAGE=$(jq -s '
     [.[] | select(.role == "assistant" or (.message and .message.role == "assistant"))] |
+    map(
+        . as $msg |
+        ($msg.content // $msg.message.content) |
+        map(select(.type == "text")) |
+        if length > 0 then {msg: $msg, texts: .} else empty end
+    ) |
     if length > 0 then
-        last |
-        .content[-1].text // .message.content[-1].text // empty
+        last.texts | last.text
     else
         empty
     end

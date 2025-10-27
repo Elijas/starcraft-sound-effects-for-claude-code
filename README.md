@@ -169,11 +169,36 @@ Logs are written to `router.log`.
 
 ## 🐛 Troubleshooting
 
-### No Sound Playing
+### No Sound Playing at All
+
+**Most Common Issue: Workspace Trust Not Accepted**
+
+Claude Code requires you to trust a workspace before hooks can run. If you don't trust the workspace, hooks are silently disabled for security.
+
+**How to fix:**
+1. Exit Claude Code completely
+2. Navigate to your project directory:
+   ```bash
+   cd /path/to/starcraft-sound-effects-for-claude-code
+   ```
+3. Start Claude Code:
+   ```bash
+   claude-code
+   ```
+4. **Look for a workspace trust prompt** when Claude Code starts
+5. **Accept/Trust the workspace**
+
+**How to verify it's working:**
+- Check debug logs: `grep "Stop hook" ~/.claude/debug/latest`
+- If you see `"Skipping Stop hook execution - workspace trust not accepted"`, the workspace is not trusted
+- After trusting, you should see hook execution in the logs
+
+**Other sound issues:**
 1. Check if `.env` exists and is configured
 2. Verify sound files exist in `SOUND_DIR`
-3. Test audio: `afplay /path/to/any/sound.wav`
-4. Enable logging to debug issues
+3. Test audio manually: `afplay /path/to/any/sound.wav`
+4. Enable logging in the script (set `ENABLE_LOGGING=true`)
+5. Check logs: `tail -20 router.log`
 
 ### Wrong Classifications
 - The AI might misclassify edge cases
