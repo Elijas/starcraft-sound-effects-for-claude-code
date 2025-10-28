@@ -11,7 +11,7 @@ SOUND_MAP_FILE="${SCRIPT_DIR}/starcraft-sounds.json"
 LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_CLASS=5
-ENABLE_LOGGING=false  # Set to true to enable logging
+ENABLE_LOGGING=true  # Set to true to enable logging
 
 # Load environment variables - required
 if [ ! -f "$ENV_FILE" ]; then
