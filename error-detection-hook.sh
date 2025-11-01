@@ -10,7 +10,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOUND_CONFIG_FILE="${SCRIPT_DIR}/sound-config.json"
 ENV_FILE="${SCRIPT_DIR}/.env"
-ENABLE_LOGGING=true  # Set to true for debugging
+ENABLE_LOGGING=false  # Set to true for debugging
 LOG_FILE="${HOME}/.claude/error-detection.log"
 
 # Load environment variables
