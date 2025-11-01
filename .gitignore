@@ -5,7 +5,7 @@ router.log
 sounds/
 /sounds/
 *.json
-!starcraft-sounds.json
+!sound-config.json
 *.jsonl
 
 # Archive artifacts and logs (for debugging and legacy content)

@@ -60,13 +60,25 @@ cp .env.example .env
 2. Edit `.env` with your settings:
 ```bash
 ANTHROPIC_API_KEY=your-api-key-here
-SOUND_DIR=/path/to/starcraft/sounds
+STARCRAFT_ROOT_DIR=/Users/your-username/Music/StarCraft
 ```
+
+**Note**: The system uses **centralized configuration**:
+- `STARCRAFT_ROOT_DIR` in `.env` (private, portable)
+- `sound-config.json` for sound mappings (relative paths)
 
 3. Update Claude settings (`~/.claude/settings.json`):
 ```json
 {
   "hooks": {
+    "PostToolUse": [{
+      "matcher": "Bash|BashOutput|Read|Write|Edit|Glob|Grep|WebFetch|WebSearch",
+      "hooks": [{
+        "type": "command",
+        "command": "/path/to/error-detection-hook.sh",
+        "timeout": 5
+      }]
+    }],
     "Stop": [{
       "hooks": [{
         "type": "command",
@@ -128,6 +140,21 @@ The system uses AI to classify Claude's responses into 14 semantic categories:
 3. **Sound Playback**: Maps classification to sound file and plays via `afplay`
 4. **Logging**: Disabled by default (set `ENABLE_LOGGING=true` in script to enable)
 
+> [!WARNING]
+> **Real-Time Error Detection Currently Not Available**
+>
+> This project includes an `error-detection-hook.sh` that *should* play sounds immediately when tool errors occur (using `PostToolUse` hooks). However, due to a [known bug in Claude Code](https://github.com/anthropics/claude-code/issues/6403), **PostToolUse hooks fail to register** across multiple versions (1.0.89 - 2.0.31+).
+>
+> **Current Status:**
+> - ✅ **Semantic classification works** (uses `Stop` hook - runs after Claude finishes)
+> - ❌ **Real-time error detection broken** (uses `PostToolUse` hook - never registers)
+>
+> **Related Issues:**
+> - [#6403 - PostToolUse Hooks Not Executing](https://github.com/anthropics/claude-code/issues/6403)
+> - [#6305 - Post/PreToolUse Hooks Not Executing](https://github.com/anthropics/claude-code/issues/6305)
+>
+> The error detection code is ready and tested - it will work once Anthropic fixes the hook registration bug. Until then, only the semantic classification (Stop hook) provides audio feedback.
+
 ### Performance
 
 - **API Cost**: ~0.001¢ per classification (uses Claude Haiku with minimal tokens)
@@ -138,25 +165,48 @@ The system uses AI to classify Claude's responses into 14 semantic categories:
 
 ```
 starcraft-sound-effects-for-claude-code/
-├── README.md                    # This file
-├── starcraft-sounds.json        # Simple class→sound mappings
-├── starcraft-sound-router.sh    # Main router script
-├── setup.sh                     # Interactive setup script
-├── .env.example                 # Environment template
-├── .env                         # Your configuration (git ignored)
-├── .gitignore                   # Excludes .env and sounds
-└── _archive/                    # Old versions and docs
+├── README.md                       # This file
+├── ERROR-DETECTION-README.md       # Error detection hook documentation
+├── sound-config.json               # Centralized sound mappings (relative paths)
+├── starcraft-sound-router.sh       # Semantic classification hook (AI)
+├── error-detection-hook.sh         # Error detection hook (algorithmic)
+├── setup.sh                        # Interactive setup script
+├── test-error-detection.sh         # Test error detection
+├── test-semantic-sounds.sh         # Test semantic sounds
+├── .env.example                    # Environment template
+├── .env                            # Your configuration (git ignored)
+├── .gitignore                      # Excludes .env and sounds
+└── _archive/                       # Old versions and docs
 ```
 
 ## 🛠️ Configuration
 
-### Environment Variables
+### Centralized Configuration System
 
-All configuration is in `.env`:
+The system uses a **two-layer configuration** for portability and maintainability:
+
+**Layer 1: Private Paths (`.env`)**
 ```bash
-ANTHROPIC_API_KEY=sk-ant-api03-...  # Your API key
-SOUND_DIR=/path/to/sounds           # Path to sound files
+ANTHROPIC_API_KEY=sk-ant-api03-...     # Your API key
+STARCRAFT_ROOT_DIR=/Users/you/Music/StarCraft  # Private, portable root directory
 ```
+
+**Layer 2: Sound Mappings (`sound-config.json`)**
+```json
+{
+  "semantic_sounds": {
+    "1": "Starcraft1/Terran/Advisor-Annotated/tadErr00-not-enough-minerals.wav",
+    ...
+  },
+  "error_sound": "Starcraft1/Misc/PPwrDown.wav"
+}
+```
+
+All sound paths are **relative to `STARCRAFT_ROOT_DIR`**, making the configuration:
+- ✅ Portable across machines
+- ✅ Private (user paths in gitignored .env)
+- ✅ Maintainable (one config file)
+- ✅ Extensible (easy to add new sounds)
 
 ### Logging
 

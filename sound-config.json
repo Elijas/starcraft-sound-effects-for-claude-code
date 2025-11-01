@@ -1,0 +1,31 @@
+{
+  "_comment": "Centralized sound configuration for StarCraft Sound Effects",
+  "_usage": "All paths are relative to STARCRAFT_ROOT_DIR from .env",
+  "_example": "STARCRAFT_ROOT_DIR=/Users/user/Music/StarCraft",
+
+  "semantic_sounds": {
+    "1": "Starcraft1/Terran/Advisor-Annotated/tadErr00-not-enough-minerals.wav",
+    "2": "Starcraft1/Terran/Advisor-Annotated/tadErr01-insufficient-vespene-gas.wav",
+    "3": "Starcraft1/Terran/Advisor-Annotated/tadErr02-additional-supply-depots-required.wav",
+    "4": "Starcraft1/Terran/Advisor-Annotated/TAdErr06-not-enough-energy.wav",
+    "5": "Starcraft1/Terran/Advisor-Annotated/tadUpd03-addon-complete.wav",
+    "6": "Starcraft1/Terran/Advisor-Annotated/tadUPD06-upgrade-complete.wav",
+    "7": "Starcraft1/Terran/Advisor-Annotated/tadUpd02-research-complete.wav",
+    "8": "Starcraft1/Terran/Advisor-Annotated/tadUPD05-abandoning-auxiliary-structure.wav",
+    "9": "Starcraft1/Terran/Advisor-Annotated/TAdUpd07-nuclear-missile-ready.wav",
+    "10": "Starcraft1/Terran/Advisor-Annotated/tadErr03-landing-sequence-interrupted.wav",
+    "11": "Starcraft1/Terran/Advisor-Annotated/tadUpd00-base-is-under-attack.wav",
+    "12": "Starcraft1/Terran/Advisor-Annotated/tadUpd01-your-forces-are-under-attack.wav",
+    "13": "Starcraft1/Terran/Advisor-Annotated/tadUPD04-nuclear-launch-detected.wav",
+    "14": "Starcraft1/Terran/Advisor-Annotated/tadErr04-unacceptable-landing-zone.wav"
+  },
+
+  "error_sound": "Starcraft1/Misc/BUTTON.WAV",
+
+  "notification_sounds": {
+    "_comment": "Future: Add notification sounds here",
+    "info": "",
+    "warning": "",
+    "success": ""
+  }
+}

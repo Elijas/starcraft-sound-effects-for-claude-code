@@ -7,7 +7,7 @@ set -euo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SOUND_MAP_FILE="${SCRIPT_DIR}/starcraft-sounds.json"
+SOUND_CONFIG_FILE="${SCRIPT_DIR}/sound-config.json"
 LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_CLASS=5
@@ -21,13 +21,18 @@ fi
 export $(grep -v '^#' "$ENV_FILE" | xargs)
 
 # Check required environment variables
-if [ -z "${SOUND_DIR:-}" ]; then
-    echo "ERROR: SOUND_DIR not set in .env file" >&2
+if [ -z "${STARCRAFT_ROOT_DIR:-}" ]; then
+    echo "ERROR: STARCRAFT_ROOT_DIR not set in .env file" >&2
     exit 1
 fi
 
-if [ ! -d "$SOUND_DIR" ]; then
-    echo "ERROR: Sound directory not found: $SOUND_DIR" >&2
+if [ ! -d "$STARCRAFT_ROOT_DIR" ]; then
+    echo "ERROR: StarCraft root directory not found: $STARCRAFT_ROOT_DIR" >&2
+    exit 1
+fi
+
+if [ ! -f "$SOUND_CONFIG_FILE" ]; then
+    echo "ERROR: Sound config file not found: $SOUND_CONFIG_FILE" >&2
     exit 1
 fi
 
@@ -82,15 +87,16 @@ log_message "Processing message: $MESSAGE_PREVIEW"
 play_sound_for_class() {
     local class_id="$1"
 
-    # Get sound file for this class
-    local sound_file=$(jq -r ".\"$class_id\" // empty" "$SOUND_MAP_FILE")
+    # Get relative sound path for this class from centralized config
+    local relative_path=$(jq -r ".semantic_sounds.\"$class_id\" // empty" "$SOUND_CONFIG_FILE")
 
-    if [ -z "$sound_file" ]; then
+    if [ -z "$relative_path" ]; then
         log_message "WARNING: No sound mapped for class $class_id"
         return 1
     fi
 
-    local full_path="${SOUND_DIR}/${sound_file}"
+    # Construct full path from root + relative path
+    local full_path="${STARCRAFT_ROOT_DIR}/${relative_path}"
 
     if [ ! -f "$full_path" ]; then
         log_message "ERROR: Sound file not found: $full_path"
@@ -99,7 +105,7 @@ play_sound_for_class() {
 
     # Play the sound in background
     afplay "$full_path" &
-    log_message "Playing sound for class $class_id: $sound_file"
+    log_message "Playing sound for class $class_id: $relative_path"
     return 0
 }
 

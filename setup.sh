@@ -56,62 +56,78 @@ else
 fi
 echo
 
-# Step 3: Configure Sound Directory
-echo -e "${YELLOW}Step 3: Sound Directory Configuration...${NC}"
+# Step 3: Configure StarCraft Root Directory
+echo -e "${YELLOW}Step 3: StarCraft Root Directory Configuration...${NC}"
+echo "The system now uses centralized sound configuration:"
+echo "  - Root directory: STARCRAFT_ROOT_DIR (in .env)"
+echo "  - Sound mappings: sound-config.json (relative paths)"
+echo
 # Load current environment
 source "$ENV_FILE" 2>/dev/null || true
 
-if [ -n "${SOUND_DIR:-}" ] && [ -d "$SOUND_DIR" ]; then
-    echo -e "${GREEN}✓ Sound directory already configured: $SOUND_DIR${NC}"
+if [ -n "${STARCRAFT_ROOT_DIR:-}" ] && [ -d "$STARCRAFT_ROOT_DIR" ]; then
+    echo -e "${GREEN}✓ StarCraft root directory already configured: $STARCRAFT_ROOT_DIR${NC}"
 else
-    echo "Sound directory is not configured or doesn't exist."
-    DEFAULT_SOUND_PATH="/Users/$(whoami)/Music/StarCraft/Starcraft1/Terran/Advisor-Annotated"
-    echo "Suggested default path: $DEFAULT_SOUND_PATH"
+    echo "StarCraft root directory is not configured or doesn't exist."
+    DEFAULT_ROOT="/Users/$(whoami)/Music/StarCraft"
+    echo "Suggested default path: $DEFAULT_ROOT"
     echo
     echo "1) Use default path"
     echo "2) Enter custom path"
     echo "3) Skip (configure later)"
-    read -r SOUND_CHOICE
+    read -r ROOT_CHOICE
 
-    case "$SOUND_CHOICE" in
+    case "$ROOT_CHOICE" in
         1)
-            SOUND_DIR="$DEFAULT_SOUND_PATH"
+            STARCRAFT_ROOT_DIR="$DEFAULT_ROOT"
             ;;
         2)
-            echo "Enter the full path to your sound files directory:"
-            read -r SOUND_DIR
+            echo "Enter the full path to your StarCraft root directory:"
+            read -r STARCRAFT_ROOT_DIR
             ;;
         3)
-            echo -e "${YELLOW}⚠ Skipping sound directory configuration${NC}"
-            SOUND_DIR=""
+            echo -e "${YELLOW}⚠ Skipping root directory configuration${NC}"
+            STARCRAFT_ROOT_DIR=""
             ;;
         *)
             echo -e "${YELLOW}⚠ Invalid choice, skipping${NC}"
-            SOUND_DIR=""
+            STARCRAFT_ROOT_DIR=""
             ;;
     esac
 
-    if [ -n "$SOUND_DIR" ]; then
-        if grep -q "^SOUND_DIR=" "$ENV_FILE"; then
-            sed -i.bak "s|^SOUND_DIR=.*|SOUND_DIR=$SOUND_DIR|" "$ENV_FILE"
+    if [ -n "$STARCRAFT_ROOT_DIR" ]; then
+        if grep -q "^STARCRAFT_ROOT_DIR=" "$ENV_FILE"; then
+            sed -i.bak "s|^STARCRAFT_ROOT_DIR=.*|STARCRAFT_ROOT_DIR=$STARCRAFT_ROOT_DIR|" "$ENV_FILE"
         else
-            echo "SOUND_DIR=$SOUND_DIR" >> "$ENV_FILE"
+            echo "STARCRAFT_ROOT_DIR=$STARCRAFT_ROOT_DIR" >> "$ENV_FILE"
         fi
-        echo -e "${GREEN}✓ Sound directory saved to .env${NC}"
+        echo -e "${GREEN}✓ StarCraft root directory saved to .env${NC}"
     fi
 fi
 
-# Verify sound files exist
-if [ -n "${SOUND_DIR:-}" ] && [ -d "$SOUND_DIR" ]; then
-    SOUND_COUNT=$(ls -1 "$SOUND_DIR"/*.wav 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$SOUND_COUNT" -ge 14 ]; then
-        echo -e "${GREEN}✓ Found $SOUND_COUNT .wav files${NC}"
+# Verify sound files exist in expected locations
+if [ -n "${STARCRAFT_ROOT_DIR:-}" ] && [ -d "$STARCRAFT_ROOT_DIR" ]; then
+    SEMANTIC_DIR="$STARCRAFT_ROOT_DIR/Starcraft1/Terran/Advisor-Annotated"
+    ERROR_FILE="$STARCRAFT_ROOT_DIR/Starcraft1/Misc/PPwrDown.wav"
+
+    if [ -d "$SEMANTIC_DIR" ]; then
+        SOUND_COUNT=$(ls -1 "$SEMANTIC_DIR"/*.wav 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$SOUND_COUNT" -ge 14 ]; then
+            echo -e "${GREEN}✓ Found $SOUND_COUNT semantic sound files in Advisor-Annotated${NC}"
+        else
+            echo -e "${YELLOW}⚠ Found only $SOUND_COUNT .wav files in Advisor-Annotated (need 14)${NC}"
+        fi
     else
-        echo -e "${YELLOW}⚠ Found only $SOUND_COUNT .wav files (need 14)${NC}"
-        echo "Download StarCraft Brood War Terran Advisor sounds"
+        echo -e "${YELLOW}⚠ Advisor-Annotated directory not found: $SEMANTIC_DIR${NC}"
+    fi
+
+    if [ -f "$ERROR_FILE" ]; then
+        echo -e "${GREEN}✓ Found error sound file (PPwrDown.wav)${NC}"
+    else
+        echo -e "${YELLOW}⚠ Error sound file not found: $ERROR_FILE${NC}"
     fi
 else
-    echo -e "${YELLOW}⚠ Sound directory not configured or doesn't exist${NC}"
+    echo -e "${YELLOW}⚠ StarCraft root directory not configured or doesn't exist${NC}"
 fi
 echo
 
@@ -234,14 +250,21 @@ else
     echo -e "${GREEN}✓ API key configured${NC}"
 fi
 
-if [ -z "${SOUND_DIR:-}" ]; then
-    echo -e "${RED}✗ Sound directory not configured${NC}"
+if [ -z "${STARCRAFT_ROOT_DIR:-}" ]; then
+    echo -e "${RED}✗ StarCraft root directory not configured${NC}"
     ISSUES=$((ISSUES + 1))
-elif [ ! -d "$SOUND_DIR" ]; then
-    echo -e "${RED}✗ Sound directory doesn't exist: $SOUND_DIR${NC}"
+elif [ ! -d "$STARCRAFT_ROOT_DIR" ]; then
+    echo -e "${RED}✗ StarCraft root directory doesn't exist: $STARCRAFT_ROOT_DIR${NC}"
     ISSUES=$((ISSUES + 1))
 else
-    echo -e "${GREEN}✓ Sound directory exists${NC}"
+    echo -e "${GREEN}✓ StarCraft root directory exists${NC}"
+fi
+
+if [ ! -f "$SCRIPT_DIR/sound-config.json" ]; then
+    echo -e "${YELLOW}⚠ Sound config file missing (sound-config.json)${NC}"
+    ISSUES=$((ISSUES + 1))
+else
+    echo -e "${GREEN}✓ Sound config file exists${NC}"
 fi
 
 if [ ! -f "$HOOK_SCRIPT" ]; then
