@@ -20,7 +20,7 @@
     "14": "Starcraft1/Terran/Advisor-Annotated/tadErr04-unacceptable-landing-zone.wav"
   },
 
-  "error_sound": "Starcraft1/Misc/BUTTON.WAV",
+  "error_sound": "Starcraft1/Terran/Goliath/TGoYes01.wav",
 
   "notification_sounds": {
     "_comment": "Future: Add notification sounds here",
