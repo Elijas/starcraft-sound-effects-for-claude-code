@@ -1,7 +1,8 @@
 {
   "_comment": "Centralized sound configuration for StarCraft Sound Effects",
   "_usage": "All paths are relative to STARCRAFT_ROOT_DIR from .env",
-  "_path_types": "Paths can be either specific files (e.g., 'folder/file.wav') or folders (e.g., 'folder/'). When a folder is specified, a random .wav file from that folder will be played.",
+  "_path_types": "Paths can be either specific files (e.g., 'folder/file.wav'), folders (e.g., 'folder/'), or objects with path and exclude fields. When a folder is specified, a random .wav file from that folder will be played.",
+  "_path_examples": "String: 'folder/', Object: {\"path\": \"folder/\", \"exclude\": [\"file1.wav\", \"file2.wav\"]}",
   "_example": "STARCRAFT_ROOT_DIR=/Users/user/Music/StarCraft",
 
   "semantic_sounds": {
@@ -21,7 +22,10 @@
     "14": "Starcraft1/Terran/Advisor-Annotated/tadErr04-unacceptable-landing-zone.wav"
   },
 
-  "error_sound": "Starcraft1/Terran/Goliath/",
+  "error_sound": {
+    "path": "Starcraft1/Terran/Goliath/",
+    "exclude": ["TGoDth00.wav"]
+  },
 
   "notification_sounds": {
     "_comment": "Future: Add notification sounds here",

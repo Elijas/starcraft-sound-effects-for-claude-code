@@ -90,16 +90,33 @@ log_message "Processing message: $MESSAGE_PREVIEW"
 play_sound_for_class() {
     local class_id="$1"
 
-    # Get relative sound path for this class from centralized config
-    local relative_path=$(jq -r ".semantic_sounds.\"$class_id\" // empty" "$SOUND_CONFIG_FILE")
+    # Get sound config for this class from centralized config (supports string or object)
+    local sound_config=$(jq -c ".semantic_sounds.\"$class_id\" // empty" "$SOUND_CONFIG_FILE")
 
-    if [ -z "$relative_path" ]; then
+    if [ -z "$sound_config" ] || [ "$sound_config" = "null" ]; then
         log_message "WARNING: No sound mapped for class $class_id"
         return 1
     fi
 
-    # Resolve the path (supports both files and folders)
-    local full_path=$(resolve_sound_path "$relative_path")
+    # Parse config (can be string or object with path/exclude)
+    local config_type=$(echo "$sound_config" | jq -r 'type')
+    local relative_path
+    local exclude_json=""
+
+    if [ "$config_type" = "object" ]; then
+        relative_path=$(echo "$sound_config" | jq -r '.path // empty')
+        exclude_json=$(echo "$sound_config" | jq -c '.exclude // empty')
+    else
+        relative_path=$(echo "$sound_config" | jq -r '.')
+    fi
+
+    if [ -z "$relative_path" ]; then
+        log_message "WARNING: No path configured for class $class_id"
+        return 1
+    fi
+
+    # Resolve the path (supports both files and folders, with optional exclusions)
+    local full_path=$(resolve_sound_path "$relative_path" "$exclude_json")
 
     if [ -z "$full_path" ] || [ ! -f "$full_path" ]; then
         log_message "ERROR: Could not resolve sound path: $relative_path"

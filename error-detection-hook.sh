@@ -32,15 +32,30 @@ if [ ! -f "$SOUND_CONFIG_FILE" ]; then
     exit 1
 fi
 
-# Get error sound path from centralized config
-ERROR_SOUND_RELATIVE=$(jq -r '.error_sound // empty' "$SOUND_CONFIG_FILE")
-if [ -z "$ERROR_SOUND_RELATIVE" ]; then
+# Get error sound config from centralized config (supports string or object)
+ERROR_SOUND_CONFIG=$(jq -r '.error_sound // empty' "$SOUND_CONFIG_FILE")
+if [ -z "$ERROR_SOUND_CONFIG" ]; then
     echo "ERROR: error_sound not configured in $SOUND_CONFIG_FILE" >&2
     exit 1
 fi
 
-# Resolve the sound path (supports both files and folders)
-SOUND_FILE=$(resolve_sound_path "$ERROR_SOUND_RELATIVE")
+# Parse config (can be string or object with path/exclude)
+ERROR_SOUND_TYPE=$(echo "$ERROR_SOUND_CONFIG" | jq -r 'type')
+if [ "$ERROR_SOUND_TYPE" = "object" ]; then
+    ERROR_SOUND_RELATIVE=$(echo "$ERROR_SOUND_CONFIG" | jq -r '.path // empty')
+    ERROR_SOUND_EXCLUDE=$(echo "$ERROR_SOUND_CONFIG" | jq -c '.exclude // empty')
+else
+    ERROR_SOUND_RELATIVE="$ERROR_SOUND_CONFIG"
+    ERROR_SOUND_EXCLUDE=""
+fi
+
+if [ -z "$ERROR_SOUND_RELATIVE" ]; then
+    echo "ERROR: error_sound path not configured in $SOUND_CONFIG_FILE" >&2
+    exit 1
+fi
+
+# Resolve the sound path (supports both files and folders, with optional exclusions)
+SOUND_FILE=$(resolve_sound_path "$ERROR_SOUND_RELATIVE" "$ERROR_SOUND_EXCLUDE")
 if [ -z "$SOUND_FILE" ]; then
     echo "ERROR: Could not resolve error sound path: $ERROR_SOUND_RELATIVE" >&2
     exit 1
