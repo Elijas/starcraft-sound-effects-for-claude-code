@@ -13,6 +13,9 @@ ENV_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_CLASS=5
 ENABLE_LOGGING=false  # Set to true to enable logging
 
+# Source sound path resolver
+source "${SCRIPT_DIR}/sound-path-resolver.sh"
+
 # Load environment variables - required
 if [ ! -f "$ENV_FILE" ]; then
     echo "ERROR: Missing .env file. Please copy .env.example to .env and configure it." >&2
@@ -95,17 +98,17 @@ play_sound_for_class() {
         return 1
     fi
 
-    # Construct full path from root + relative path
-    local full_path="${STARCRAFT_ROOT_DIR}/${relative_path}"
+    # Resolve the path (supports both files and folders)
+    local full_path=$(resolve_sound_path "$relative_path")
 
-    if [ ! -f "$full_path" ]; then
-        log_message "ERROR: Sound file not found: $full_path"
+    if [ -z "$full_path" ] || [ ! -f "$full_path" ]; then
+        log_message "ERROR: Could not resolve sound path: $relative_path"
         return 1
     fi
 
     # Play the sound in background
     afplay "$full_path" &
-    log_message "Playing sound for class $class_id: $relative_path"
+    log_message "Playing sound for class $class_id: $full_path"
     return 0
 }
 

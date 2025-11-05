@@ -13,6 +13,9 @@ ENV_FILE="${SCRIPT_DIR}/.env"
 ENABLE_LOGGING=false  # Set to true for debugging
 LOG_FILE="${HOME}/.claude/error-detection.log"
 
+# Source sound path resolver
+source "${SCRIPT_DIR}/sound-path-resolver.sh"
+
 # Load environment variables
 if [ -f "$ENV_FILE" ]; then
     export $(grep -v '^#' "$ENV_FILE" | xargs)
@@ -36,8 +39,12 @@ if [ -z "$ERROR_SOUND_RELATIVE" ]; then
     exit 1
 fi
 
-# Construct full path
-SOUND_FILE="${STARCRAFT_ROOT_DIR}/${ERROR_SOUND_RELATIVE}"
+# Resolve the sound path (supports both files and folders)
+SOUND_FILE=$(resolve_sound_path "$ERROR_SOUND_RELATIVE")
+if [ -z "$SOUND_FILE" ]; then
+    echo "ERROR: Could not resolve error sound path: $ERROR_SOUND_RELATIVE" >&2
+    exit 1
+fi
 
 # Logging function
 log_message() {
