@@ -123,8 +123,8 @@ play_sound_for_class() {
         return 1
     fi
 
-    # Play the sound in background
-    afplay "$full_path" &
+    # Play the sound (synchronous - whole main runs in background)
+    afplay "$full_path"
     log_message "Playing sound for class $class_id: $full_path"
     return 0
 }
@@ -243,8 +243,10 @@ main() {
     play_sound_for_class "$CLASS"
 }
 
-# Run main function
-main
+# Run main function in background (non-blocking)
+# Fork once here, everything inside main runs synchronously
+main &
+disown
 
-# Exit successfully
+# Exit immediately - don't wait for background process
 exit 0
