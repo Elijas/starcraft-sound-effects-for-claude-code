@@ -9,6 +9,7 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOUND_CONFIG_FILE="${SCRIPT_DIR}/sound-config.json"
+USER_CONFIG_FILE="${HOME}/.config/starcraft-sounds.yaml"
 ENV_FILE="${SCRIPT_DIR}/.env"
 ENABLE_LOGGING=false  # Set to true for debugging
 LOG_FILE="${HOME}/.claude/error-detection.log"
@@ -54,8 +55,27 @@ if [ -z "$ERROR_SOUND_RELATIVE" ]; then
     exit 1
 fi
 
-# Resolve the sound path (supports both files and folders, with optional exclusions)
-SOUND_FILE=$(resolve_sound_path "$ERROR_SOUND_RELATIVE" "$ERROR_SOUND_EXCLUDE")
+# Check user config for error mode
+ERROR_MODE="default"
+ERROR_SOUND_OVERRIDE=""
+if [ -f "$USER_CONFIG_FILE" ]; then
+    ERROR_MODE=$(yq -r '.error.mode // "default"' "$USER_CONFIG_FILE" 2>/dev/null || echo "default")
+    ERROR_SOUND_OVERRIDE=$(yq -r '.error.sound // ""' "$USER_CONFIG_FILE" 2>/dev/null || echo "")
+fi
+
+# Handle silent mode - exit early
+if [ "$ERROR_MODE" = "silent" ]; then
+    exit 0
+fi
+
+# Resolve sound file based on mode
+if [ "$ERROR_MODE" = "single" ] && [ -n "$ERROR_SOUND_OVERRIDE" ]; then
+    SOUND_FILE="$ERROR_SOUND_OVERRIDE"
+else
+    # Default mode: resolve from sound-config.json
+    SOUND_FILE=$(resolve_sound_path "$ERROR_SOUND_RELATIVE" "$ERROR_SOUND_EXCLUDE")
+fi
+
 if [ -z "$SOUND_FILE" ]; then
     echo "ERROR: Could not resolve error sound path: $ERROR_SOUND_RELATIVE" >&2
     exit 1

@@ -8,6 +8,7 @@ set -euo pipefail
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOUND_CONFIG_FILE="${SCRIPT_DIR}/sound-config.json"
+USER_CONFIG_FILE="${HOME}/.config/starcraft-sounds.yaml"
 LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
 DEFAULT_CLASS=5
@@ -216,6 +217,29 @@ Return only: {\"class\": N}"
 
 # Main execution
 main() {
+    # Check user config for completion mode
+    if [ -f "$USER_CONFIG_FILE" ]; then
+        local mode=$(yq -r '.completion.mode // "default"' "$USER_CONFIG_FILE" 2>/dev/null || echo "default")
+        local sound=$(yq -r '.completion.sound // ""' "$USER_CONFIG_FILE" 2>/dev/null || echo "")
+
+        case "$mode" in
+            silent)
+                log_message "Completion mode: silent (skipping)"
+                return 0
+                ;;
+            single)
+                if [ -n "$sound" ] && [ -f "$sound" ]; then
+                    afplay "$sound"
+                    log_message "Completion mode: single sound: $sound"
+                else
+                    log_message "WARNING: Single mode but sound file not found: $sound"
+                fi
+                return 0
+                ;;
+            # default: fall through to normal classification
+        esac
+    fi
+
     # Classify the message
     CLASS=$(classify_with_claude "$ASSISTANT_MESSAGE")
 
