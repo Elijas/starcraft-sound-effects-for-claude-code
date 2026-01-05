@@ -104,21 +104,25 @@ SUCCESS=$(echo "$TOOL_RESPONSE" | jq -r '.success // null')
 
 log_message "=== Hook triggered for tool: $TOOL_NAME ==="
 
-# Initialize error detection flag
+# Initialize error detection flag and reasons array
 ERROR_DETECTED=false
+ERROR_REASONS=()
 
 # Pattern 1: Non-zero exit code
 if [[ "$EXIT_CODE" != "null" ]] && [[ "$EXIT_CODE" =~ ^[1-9][0-9]*$ ]]; then
     log_message "ERROR: Non-zero exit code detected: $EXIT_CODE"
     ERROR_DETECTED=true
+    ERROR_REASONS+=("exit $EXIT_CODE")
 fi
 
 # Pattern 2: stderr contains error indicators
 if [[ -n "$STDERR" ]] && [[ "$STDERR" != "null" ]]; then
     # Check for common error patterns in stderr (case-insensitive)
-    if echo "$STDERR" | grep -qiE '(traceback|error:|exception|failed|fatal|critical|syntax error|cannot find|permission denied|no such file|command not found|connection refused|timeout)'; then
-        log_message "ERROR: Error pattern detected in stderr"
+    STDERR_MATCH=$(echo "$STDERR" | grep -oiE '(traceback|error|exception|failed|fatal|critical|syntax error|cannot find|permission denied|no such file|command not found|connection refused|timeout)' | head -1 | tr '[:upper:]' '[:lower:]')
+    if [[ -n "$STDERR_MATCH" ]]; then
+        log_message "ERROR: Error pattern detected in stderr: $STDERR_MATCH"
         ERROR_DETECTED=true
+        ERROR_REASONS+=("$STDERR_MATCH")
     fi
 fi
 
@@ -126,30 +130,42 @@ fi
 if [[ -n "$ERROR_FIELD" ]] && [[ "$ERROR_FIELD" != "null" ]] && [[ "$ERROR_FIELD" != "" ]]; then
     log_message "ERROR: Error field populated: $ERROR_FIELD"
     ERROR_DETECTED=true
+    # Extract first meaningful word/phrase from error field
+    ERROR_WORD=$(echo "$ERROR_FIELD" | grep -oE '^[A-Za-z_]+' | head -1)
+    if [[ -n "$ERROR_WORD" ]]; then
+        ERROR_REASONS+=("$ERROR_WORD")
+    else
+        ERROR_REASONS+=("error")
+    fi
 fi
 
 # Pattern 4: success=false
 if [[ "$SUCCESS" == "false" ]]; then
     log_message "ERROR: Tool reported success=false"
     ERROR_DETECTED=true
+    ERROR_REASONS+=("failed")
 fi
 
 # Pattern 5: stdout contains Python/JS error patterns
 if [[ -n "$STDOUT" ]] && [[ "$STDOUT" != "null" ]]; then
     # Check for Python exceptions
-    if echo "$STDOUT" | grep -qE '(Traceback \(most recent call last\)|SyntaxError|ValueError|TypeError|KeyError|IndexError|AttributeError|ImportError|RuntimeError|NameError)'; then
-        log_message "ERROR: Python error detected in stdout"
+    PY_MATCH=$(echo "$STDOUT" | grep -oE '(Traceback|SyntaxError|ValueError|TypeError|KeyError|IndexError|AttributeError|ImportError|RuntimeError|NameError)' | head -1)
+    if [[ -n "$PY_MATCH" ]]; then
+        log_message "ERROR: Python error detected in stdout: $PY_MATCH"
         ERROR_DETECTED=true
+        ERROR_REASONS+=("$PY_MATCH")
     fi
 
     # Check for JavaScript errors
-    if echo "$STDOUT" | grep -qE '(Error:|TypeError:|ReferenceError:|SyntaxError:|RangeError:)'; then
-        log_message "ERROR: JavaScript error detected in stdout"
+    JS_MATCH=$(echo "$STDOUT" | grep -oE '(TypeError|ReferenceError|SyntaxError|RangeError)' | head -1)
+    if [[ -n "$JS_MATCH" ]]; then
+        log_message "ERROR: JavaScript error detected in stdout: $JS_MATCH"
         ERROR_DETECTED=true
+        ERROR_REASONS+=("$JS_MATCH")
     fi
 fi
 
-# If error detected, play sound
+# If error detected, play sound and speak reason
 if [ "$ERROR_DETECTED" = true ]; then
     log_message "Playing error sound: $SOUND_FILE"
 
@@ -160,6 +176,20 @@ if [ "$ERROR_DETECTED" = true ]; then
         log_message "Sound playback initiated"
     else
         log_message "WARNING: Sound file not found: $SOUND_FILE"
+    fi
+
+    # Speak error reasons using macOS say (deduplicated)
+    if [ ${#ERROR_REASONS[@]} -gt 0 ]; then
+        # Deduplicate reasons while preserving order
+        UNIQUE_REASONS=()
+        for reason in "${ERROR_REASONS[@]}"; do
+            if [[ ! " ${UNIQUE_REASONS[*]} " =~ " ${reason} " ]]; then
+                UNIQUE_REASONS+=("$reason")
+            fi
+        done
+        SAY_TEXT=$(IFS=', '; echo "${UNIQUE_REASONS[*]}")
+        log_message "Speaking: $SAY_TEXT"
+        say "$SAY_TEXT" &
     fi
 else
     log_message "No errors detected"
