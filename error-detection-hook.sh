@@ -3,8 +3,12 @@
 # Error Detection Hook for Claude Code
 # Algorithmic (NO AI) error detection from tool outputs
 # Plays sound when errors are detected in tool responses
+#
+# NOTE: Due to a Claude Code bug, PostToolUse hooks are NOT called for
+# failed Bash commands (non-zero exit codes). This hook only works for
+# successful tool calls. See: https://github.com/anthropics/claude-code/issues
 
-set -euo pipefail
+set -uo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -146,8 +150,8 @@ if [[ "$SUCCESS" == "false" ]]; then
     ERROR_REASONS+=("failed")
 fi
 
-# Pattern 5: stdout contains Python/JS error patterns
-if [[ -n "$STDOUT" ]] && [[ "$STDOUT" != "null" ]]; then
+# Pattern 5: stdout contains Python/JS error patterns (Bash only)
+if [[ "$TOOL_NAME" == "Bash" ]] && [[ -n "$STDOUT" ]] && [[ "$STDOUT" != "null" ]]; then
     # Check for Python exceptions
     PY_MATCH=$(echo "$STDOUT" | grep -oE '(Traceback|SyntaxError|ValueError|TypeError|KeyError|IndexError|AttributeError|ImportError|RuntimeError|NameError)' | head -1)
     if [[ -n "$PY_MATCH" ]]; then
@@ -171,8 +175,9 @@ if [ "$ERROR_DETECTED" = true ]; then
 
     # Verify sound file exists
     if [ -f "$SOUND_FILE" ]; then
-        # Play sound in background (don't wait for completion)
-        afplay "$SOUND_FILE" &
+        # Play sound in background (fully detached from hook process)
+        nohup afplay "$SOUND_FILE" >/dev/null 2>&1 &
+        disown
         log_message "Sound playback initiated"
     else
         log_message "WARNING: Sound file not found: $SOUND_FILE"
@@ -183,13 +188,23 @@ if [ "$ERROR_DETECTED" = true ]; then
         # Deduplicate reasons while preserving order
         UNIQUE_REASONS=()
         for reason in "${ERROR_REASONS[@]}"; do
-            if [[ ! " ${UNIQUE_REASONS[*]} " =~ " ${reason} " ]]; then
+            # Check if already in array (handle empty array case)
+            FOUND=false
+            for existing in "${UNIQUE_REASONS[@]+"${UNIQUE_REASONS[@]}"}"; do
+                if [[ "$existing" == "$reason" ]]; then
+                    FOUND=true
+                    break
+                fi
+            done
+            if [[ "$FOUND" == "false" ]]; then
                 UNIQUE_REASONS+=("$reason")
             fi
         done
         SAY_TEXT=$(IFS=', '; echo "${UNIQUE_REASONS[*]}")
         log_message "Speaking: $SAY_TEXT"
-        say "$SAY_TEXT" &
+        # Delay so sound plays before speech (fully detached)
+        nohup bash -c "sleep 2 && say '$SAY_TEXT'" >/dev/null 2>&1 &
+        disown
     fi
 else
     log_message "No errors detected"
