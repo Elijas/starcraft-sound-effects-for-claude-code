@@ -95,16 +95,27 @@ log_message() {
 # Read JSON hook input from stdin
 HOOK_INPUT=$(cat)
 
-# Extract key fields
-TOOL_NAME=$(echo "$HOOK_INPUT" | jq -r '.tool_name // "unknown"')
-TOOL_RESPONSE=$(echo "$HOOK_INPUT" | jq -r '.tool_response // {}')
-
-# Extract error indicators from tool_response
-EXIT_CODE=$(echo "$TOOL_RESPONSE" | jq -r '.exitCode // null')
-STDERR=$(echo "$TOOL_RESPONSE" | jq -r '.stderr // ""')
-STDOUT=$(echo "$TOOL_RESPONSE" | jq -r '.stdout // ""')
-ERROR_FIELD=$(echo "$TOOL_RESPONSE" | jq -r '.error // ""')
-SUCCESS=$(echo "$TOOL_RESPONSE" | jq -r '.success // null')
+# Extract all fields in a SINGLE jq pass, NUL-delimited so multiline stdout/stderr
+# survive intact. This replaces 7 separate `echo | jq` pipelines that ran on every tool
+# call of every session; one jq exec instead of seven sharply cuts per-hook process
+# churn (that fan-out x many concurrent sessions once fork-stormed the Mac into a freeze).
+TOOL_NAME="unknown"; EXIT_CODE="null"; STDERR=""; STDOUT=""; ERROR_FIELD=""; SUCCESS="null"
+{
+    IFS= read -r -d '' TOOL_NAME
+    IFS= read -r -d '' EXIT_CODE
+    IFS= read -r -d '' STDERR
+    IFS= read -r -d '' STDOUT
+    IFS= read -r -d '' ERROR_FIELD
+    IFS= read -r -d '' SUCCESS
+} < <(printf '%s' "$HOOK_INPUT" | jq -j '
+    ( (.tool_response // {}) | if type == "object" then . else {} end ) as $r
+    | (.tool_name // "unknown"), "\u0000",
+      ($r.exitCode // "null"), "\u0000",
+      ($r.stderr  // ""),     "\u0000",
+      ($r.stdout  // ""),     "\u0000",
+      ($r.error   // ""),     "\u0000",
+      ($r.success // "null"), "\u0000"
+')
 
 log_message "=== Hook triggered for tool: $TOOL_NAME ==="
 
