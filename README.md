@@ -268,16 +268,6 @@ The StarCraft Terran Adjutant is the perfect metaphor:
 - Instant nostalgia hit for millions of players
 - The sounds are already designed to convey information quickly
 
-## 🚧 Roadmap
-
-- [ ] Linux support (use `aplay` instead of `afplay`)
-- [ ] Windows support (use PowerShell audio)
-- [ ] VS Code extension version
-- [ ] Cursor integration
-- [ ] Volume control based on severity
-- [ ] Custom sound packs (Zerg/Protoss advisors?)
-- [ ] Statistics dashboard
-
 ## 📄 License
 
 MIT License - See [LICENSE](LICENSE) file
