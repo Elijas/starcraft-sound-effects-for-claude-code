@@ -2,6 +2,7 @@
 *.wav
 *.mp3
 router.log
+.haiku-model
 sounds/
 /sounds/
 *.json
