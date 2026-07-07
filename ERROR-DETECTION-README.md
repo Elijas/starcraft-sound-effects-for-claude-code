@@ -2,9 +2,9 @@
 
 ## Overview
 
-Algorithmic (NO AI) error detection hook that plays a StarCraft power-down sound when Claude Code tool operations encounter errors.
+Algorithmic (NO AI) error detection hook that plays a StarCraft error sound when Claude Code tool operations encounter errors.
 
-**Sound File**: `/Users/user/Music/StarCraft/Starcraft1/Misc/PPwrDown.wav`
+**Error sound**: configured via the `error_sound` entry in `sound-config.json` (paths relative to `STARCRAFT_ROOT_DIR`). By default this is a random Goliath unit sound from `Starcraft1/Terran/Goliath/`.
 
 ## How It Works
 
@@ -56,7 +56,7 @@ The hook uses pure regex pattern matching to detect:
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/user/Development/starcraft-sound-effects-for-claude-code/error-detection-hook.sh",
+            "command": "/path/to/starcraft-sound-effects-for-claude-code/error-detection-hook.sh",
             "timeout": 5
           }
         ]
@@ -68,7 +68,7 @@ The hook uses pure regex pattern matching to detect:
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/user/Development/starcraft-sound-effects-for-claude-code/starcraft-sound-router.sh"
+            "command": "/path/to/starcraft-sound-effects-for-claude-code/starcraft-sound-router.sh"
           }
         ]
       }
@@ -81,7 +81,7 @@ The hook uses pure regex pattern matching to detect:
 
 ### Run Test Suite
 ```bash
-cd /Users/user/Development/starcraft-sound-effects-for-claude-code
+cd /path/to/starcraft-sound-effects-for-claude-code
 ./test-error-detection.sh
 ```
 
@@ -101,7 +101,7 @@ To test with actual Claude Code operations:
    Run a Python script with an error
    Execute a shell command that returns non-zero exit code
    ```
-3. **Listen for the power-down sound** (PPwrDown.wav)
+3. **Listen for the error sound** (a random Goliath unit sound)
 
 ## Debugging
 
@@ -125,8 +125,8 @@ Log entries show:
 
 **No sound playing:**
 1. Restart Claude Code (hooks are cached at startup)
-2. Verify sound file exists: `ls -lh /Users/user/Music/StarCraft/Starcraft1/Misc/PPwrDown.wav`
-3. Test audio manually: `afplay /Users/user/Music/StarCraft/Starcraft1/Misc/PPwrDown.wav`
+2. Verify the configured error-sound folder exists (see `sound-config.json` → `error_sound`): `ls -lh "$STARCRAFT_ROOT_DIR/Starcraft1/Terran/Goliath/"`
+3. Test audio manually with any file from it: `afplay "$(ls "$STARCRAFT_ROOT_DIR"/Starcraft1/Terran/Goliath/*.wav | head -1)"`
 4. Enable logging and check logs
 
 **Sound playing for non-errors:**
@@ -167,17 +167,18 @@ starcraft-sound-effects-for-claude-code/
 ├── test-error-detection.sh         # Test suite for error detection
 ├── ERROR-DETECTION-README.md       # This file
 ├── starcraft-sound-router.sh       # Semantic classification hook (AI)
-├── starcraft-sounds.json           # Sound mappings for semantic hook
+├── sound-config.json               # Sound mappings (semantic + error sounds)
 └── README.md                       # Main project README
 ```
 
 ## Customization
 
 ### Change Sound File
-Edit `error-detection-hook.sh`:
-```bash
-SOUND_FILE="/path/to/your/sound.wav"
+Edit the `error_sound` entry in `sound-config.json` (paths relative to `STARCRAFT_ROOT_DIR`):
+```json
+"error_sound": { "path": "Starcraft1/Terran/Goliath/", "exclude": ["TGoDth00.wav"] }
 ```
+A folder plays a random `.wav` from it; a single-file path plays that file.
 
 ### Add More Tools
 Edit `~/.claude/settings.json` matcher:

@@ -136,9 +136,10 @@ The system uses AI to classify Claude's responses into 14 semantic categories:
 ### Technical Architecture
 
 1. **Hook Integration**: Integrates with Claude Code's `Stop` hook
-2. **AI Classification**: Uses Claude Haiku API to classify responses
+2. **AI Classification**: Uses Claude Haiku to classify responses. The model is **self-healing** — if the pinned Haiku model is retired (the API returns a `not_found` error), the router queries the API's model list, picks the newest Haiku by release date, and caches it in `.haiku-model` so future sessions skip the discovery.
 3. **Sound Playback**: Maps classification to sound file and plays via `afplay`
-4. **Logging**: Disabled by default (set `ENABLE_LOGGING=true` in script to enable)
+4. **Foreground gate**: Only the session you're actively watching makes sound (see [When Sounds Play](#when-sounds-play)) — in-process subagents and background sessions stay silent
+5. **Logging**: Disabled by default (set `ENABLE_LOGGING=true` in script to enable)
 
 > [!WARNING]
 > **Real-Time Error Detection Currently Not Available**
@@ -175,6 +176,7 @@ starcraft-sound-effects-for-claude-code/
 ├── test-semantic-sounds.sh         # Test semantic sounds
 ├── .env.example                    # Environment template
 ├── .env                            # Your configuration (git ignored)
+├── .haiku-model                    # Cached Haiku model id, self-healed (git ignored)
 ├── .gitignore                      # Excludes .env and sounds
 └── _archive/                       # Old versions and docs
 ```
@@ -207,6 +209,25 @@ All sound paths are **relative to `STARCRAFT_ROOT_DIR`**, making the configurati
 - ✅ Private (user paths in gitignored .env)
 - ✅ Maintainable (one config file)
 - ✅ Extensible (easy to add new sounds)
+
+### When Sounds Play
+
+By default, sound plays only in the **session you are actively watching**. This keeps a fleet of background or parallel sessions from turning into a chorus.
+
+The `Stop` hook decides in this order:
+
+1. **`STARCRAFT_SOUNDS` override** (environment variable) — always wins:
+   - `STARCRAFT_SOUNDS=1` (or `on` / `true`) → always play
+   - `STARCRAFT_SOUNDS=0` (or `off` / `false`) → always silent
+2. **Subagents stay silent** — in-process subagents (`SubagentStop`) never play.
+3. **Auto (no override):**
+   - **Not in tmux** (plain terminal) → **play**. This is the default for most users.
+   - **In tmux, session attached** (a client is viewing it) → **play**.
+   - **In tmux, session detached** (running in the background) → **silent**.
+
+**No special tooling required.** The only optional dependency is `tmux`, and it is consulted *only* when you are already inside a tmux session. If you don't use tmux, sounds simply play on every response.
+
+> Because the attached-check is evaluated live on every response, a background tmux session brought to the foreground starts playing on its next response (no restart needed), and a foreground session sent to the background goes quiet.
 
 ### Logging
 

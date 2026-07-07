@@ -3,7 +3,7 @@
   "_usage": "All paths are relative to STARCRAFT_ROOT_DIR from .env",
   "_path_types": "Paths can be either specific files (e.g., 'folder/file.wav'), folders (e.g., 'folder/'), or objects with path and exclude fields. When a folder is specified, a random .wav file from that folder will be played.",
   "_path_examples": "String: 'folder/', Object: {\"path\": \"folder/\", \"exclude\": [\"file1.wav\", \"file2.wav\"]}",
-  "_example": "STARCRAFT_ROOT_DIR=/Users/user/Music/StarCraft",
+  "_example": "STARCRAFT_ROOT_DIR=/Users/$USER/Music/StarCraft",
 
   "semantic_sounds": {
     "1": "Starcraft1/Terran/Advisor-Annotated/tadErr00-not-enough-minerals.wav",
