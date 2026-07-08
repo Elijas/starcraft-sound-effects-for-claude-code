@@ -6,19 +6,26 @@ Ever wished you could instantly *hear* what happened in Claude Code? Now you can
 
 ## 🔊 What You'll Hear
 
-| Sound | When You'll Hear It | Example Response |
-|-------|-------------------|------------------|
-| **"Insufficient vespene gas"** | Claude Code needs authorization, or the classifier sees a plan awaiting approval | Permission dialog, plan approval request |
-| **"Additional supply depots required"** | Context usage crosses the configured threshold | Long session reaches 800k tokens (~80% of a 1M window) |
-| **"Not enough minerals"** | Claude needs missing information before it can proceed | "Which file should I update?" |
-| **"Not enough energy"** | Claude finished a chunk and needs a continue-or-stop decision | "I finished the first module. Continue with the next one?" |
-| **"Landing sequence interrupted"** | Claude is working, with nothing finished yet this turn | "I'm checking the failing tests now." |
-| **"Research complete"** | A knowledge deliverable is complete | "The root cause is in the parser." |
-| **"Upgrade complete"** | Code change is complete | "Implemented the fix and tests pass." |
-| **"Your forces are under attack"** | The turn ends with tests/build/tools failing | "The new test is still failing." |
-| **"Nuclear missile ready"** | Work was shipped | "Pushed the branch and opened the PR." |
+Every Terran Adjutant line, ordered by how often it fires. Shares are the measured
+distribution from the author's real sessions (yours will differ; the *ordering* is
+what matters — frequent sounds are calm, rare sounds are alarming):
 
-...plus the rest of the v4.2 semantic outcomes, so your coding session sounds like a Terran command center without inventing fake success or failure states.
+| You hear | It means | Example | ≈ Share |
+|----------|----------|---------|---------|
+| **"Landing sequence interrupted"** | Working — status/ack, nothing finished yet | "I'm checking the failing tests now." | ~21% |
+| **"Not enough minerals"** | Needs information from you | "Which file should I update?" | ~20% |
+| **"Not enough energy"** | Chunk done — continue or stop? | "First module done. Continue with the next?" | ~16% |
+| **"Insufficient vespene gas"** | Your authorization is needed — plan approval or permission dialog | "Approve this plan and I'll start." | ~13% + every permission wait |
+| **"Research complete"** | Knowledge deliverable complete — analysis, report, docs | "The root cause is in the parser." | ~12% |
+| **"Add-on complete"** | Milestone — sub-tasks landed, work continues | "Committed modules A and B; starting C now." | ~9% |
+| **"Abandoning auxiliary structure"** | Wrapped up / parked — checkpoint, handoff, session retiring | "Pausing here — clean checkpoint, nothing in flight." | ~5% |
+| **"Unacceptable landing zone"** | Cannot proceed — refused, impossible, or hard error | "API Error: rate limited." | ~2.5% |
+| **"Nuclear missile ready"** | Shipped — push, publish, release, deploy | "Pushed the branch and opened the PR." | ~2% |
+| **"Upgrade complete"** | Code change complete | "Implemented the fix and tests pass." | rare |
+| **"Additional supply depots required"** | Context crossed the threshold (default 800k) | Long session filling its window | once per long session |
+| **"Your forces are under attack"** | Turn ends with new work failing | "The new test is still failing." | rare (bad news) |
+| **"Your base is under attack"** | Regression — previously-working behavior broke | "12 previously-passing tests now fail." | rare (worse news) |
+| **"Nuclear launch detected"** | Catastrophe — repo/env corrupt, destructive incident | "I force-pushed over your commits." | very rare (drop everything) |
 
 ## 🚀 Quick Start
 
