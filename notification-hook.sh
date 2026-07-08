@@ -46,20 +46,37 @@ HOOK_INPUT=$(cat)
 
 # Notification matcher support can vary by Claude Code version; the in-script
 # type check below is the defense-in-depth safety net if matchers are ignored.
+# FAIL-CLOSED: an event only plays if it is explicitly a permission prompt (or a
+# plan-approval PreToolUse). A Notification with no recognizable permission signal
+# stays silent — a missed permission sound is cheaper than a false alarm that
+# corrupts what "gas" means. Payloads are logged for forensics when logging is on.
 is_authorization_event() {
-    local event notification_type tool_name
+    local event notification_type tool_name message
     event=$(echo "$HOOK_INPUT" | jq -r '.hook_event_name // empty' 2>/dev/null || true)
     notification_type=$(echo "$HOOK_INPUT" | jq -r '.notification_type // .type // empty' 2>/dev/null || true)
     tool_name=$(echo "$HOOK_INPUT" | jq -r '.tool_name // empty' 2>/dev/null || true)
+    message=$(echo "$HOOK_INPUT" | jq -r '.message // empty' 2>/dev/null || true)
 
     if [ "$event" = "PreToolUse" ] && [ "$tool_name" = "ExitPlanMode" ]; then
         return 0
     fi
 
-    if [ "$event" = "Notification" ] || [ -n "$notification_type" ]; then
-        if [ -z "$notification_type" ] || [ "$notification_type" = "permission_prompt" ]; then
+    if [ "$event" = "Notification" ]; then
+        log_message "Notification payload: $(echo "$HOOK_INPUT" | tr -d '\n' | head -c 400)"
+        # Explicit type field wins in either direction
+        if [ "$notification_type" = "permission_prompt" ]; then
             return 0
         fi
+        if [ -n "$notification_type" ]; then
+            return 1
+        fi
+        # No type field: accept only if the human-readable message clearly says
+        # a permission is being requested; otherwise stay silent (fail-closed).
+        case "$message" in
+            *"permission"*|*"Permission"*|*"needs your approval"*)
+                return 0 ;;
+        esac
+        log_message "Notification without permission signal — staying silent (fail-closed)"
         return 1
     fi
 
