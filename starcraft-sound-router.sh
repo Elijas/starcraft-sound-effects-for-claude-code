@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# StarCraft Sound Router v3.0
-# Direct 14-class semantic mapping with token-efficient Claude API classification
+# StarCraft Sound Router v4.0
+# Hybrid deterministic channels plus 12-class semantic Claude API classification
 
 set -euo pipefail
 
@@ -11,7 +11,7 @@ SOUND_CONFIG_FILE="${SCRIPT_DIR}/sound-config.json"
 USER_CONFIG_FILE="${HOME}/.config/starcraft-sounds.yaml"
 LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
-DEFAULT_CLASS=5
+STATE_DIR="${STARCRAFT_SOUNDS_STATE_DIR:-/tmp/starcraft-sounds-state}"
 ENABLE_LOGGING="${ENABLE_LOGGING:-false}"  # Set to true (or export ENABLE_LOGGING=true) to enable logging
 
 # Model self-healing: the classifier pins a Haiku model. Models get retired over
@@ -69,16 +69,7 @@ log_message() {
 # (CLAUDE_CODE_CHILD_SESSION is NOT usable here — it is always "1" inside any hook
 # subprocess. SubagentStop events carry agent_id; the primary Stop does not.)
 should_play_sound() {
-    # 1. Explicit override always wins
-    case "$(printf '%s' "$SOUND_SCOPE" | tr '[:upper:]' '[:lower:]')" in
-        1|on|true|yes|enable|enabled)
-            return 0 ;;
-        0|off|false|no|disable|disabled|silent|mute)
-            log_message "Gate: silenced by STARCRAFT_SOUNDS override"
-            return 1 ;;
-    esac
-
-    # 2. Never fire for subagent completions (defense-in-depth if wired to SubagentStop)
+    # 1. Never fire for subagent completions (defense-in-depth if wired to SubagentStop)
     local event agent_id
     event=$(echo "$HOOK_INPUT" | jq -r '.hook_event_name // empty' 2>/dev/null || true)
     agent_id=$(echo "$HOOK_INPUT" | jq -r '.agent_id // empty' 2>/dev/null || true)
@@ -86,6 +77,15 @@ should_play_sound() {
         log_message "Gate: silenced (subagent event: ${event:-agent_id present})"
         return 1
     fi
+
+    # 2. Explicit override for primary sessions
+    case "$(printf '%s' "$SOUND_SCOPE" | tr '[:upper:]' '[:lower:]')" in
+        1|on|true|yes|enable|enabled)
+            return 0 ;;
+        0|off|false|no|disable|disabled|silent|mute)
+            log_message "Gate: silenced by STARCRAFT_SOUNDS override"
+            return 1 ;;
+    esac
 
     # 3. Foreground detection: only an attended (tmux-attached) session makes sound.
     if [ -z "${TMUX:-}" ]; then
@@ -158,6 +158,45 @@ else
     MESSAGE_PREVIEW="${ASSISTANT_MESSAGE:0:60}[...]${ASSISTANT_MESSAGE: -40}"
 fi
 log_message "Processing message: $MESSAGE_PREVIEW"
+
+# Function to play a top-level configured sound key
+play_configured_sound() {
+    local config_key="$1"
+
+    local sound_config=$(jq -c ".\"$config_key\" // empty" "$SOUND_CONFIG_FILE")
+
+    if [ -z "$sound_config" ] || [ "$sound_config" = "null" ]; then
+        log_message "WARNING: No sound configured for $config_key"
+        return 1
+    fi
+
+    local config_type=$(echo "$sound_config" | jq -r 'type')
+    local relative_path
+    local exclude_json=""
+
+    if [ "$config_type" = "object" ]; then
+        relative_path=$(echo "$sound_config" | jq -r '.path // empty')
+        exclude_json=$(echo "$sound_config" | jq -c '.exclude // empty')
+    else
+        relative_path=$(echo "$sound_config" | jq -r '.')
+    fi
+
+    if [ -z "$relative_path" ]; then
+        log_message "WARNING: No path configured for $config_key"
+        return 1
+    fi
+
+    local full_path=$(resolve_sound_path "$relative_path" "$exclude_json")
+
+    if [ -z "$full_path" ] || [ ! -f "$full_path" ]; then
+        log_message "ERROR: Could not resolve sound path for $config_key: $relative_path"
+        return 1
+    fi
+
+    afplay "$full_path"
+    log_message "Playing $config_key sound: $full_path"
+    return 0
+}
 
 # Function to play sound for a given class
 play_sound_for_class() {
@@ -264,7 +303,7 @@ call_claude_api() {
             '{
                 model: $model,
                 max_tokens: 20,
-                temperature: 0.3,
+                temperature: 0,
                 messages: [{ role: "user", content: $prompt }]
             }')" 2>/dev/null
 }
@@ -293,9 +332,8 @@ classify_with_claude() {
 
     # Check if API key is available
     if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-        log_message "WARNING: No ANTHROPIC_API_KEY found, using default class"
-        echo "$DEFAULT_CLASS"
-        return
+        log_message "WARNING: No ANTHROPIC_API_KEY found; classifier channel silent"
+        return 1
     fi
 
     # Smart truncation: capture beginning and end if message is too long
@@ -315,24 +353,37 @@ classify_with_claude() {
 ${message: -$last_chars}"
     fi
 
-    # Prepare the crisp classification prompt
+    # Prepare the classification prompt
     local prompt="Classify this Claude Code assistant response by its semantic outcome.
 
-Classes:
-1=Need clarification (ambiguous, need details)
-2=Need permissions (missing API key/credentials)
-3=Need user choice (multiple valid options)
-4=Search failed (couldn't find file/function)
-5=Simple edit done (single file, minor change)
-6=Feature complete (function/bug fix/refactor)
-7=Analysis complete (code explained/files read)
-8=Cleanup complete (deleted/removed code)
-9=Deployed successfully (git push/tests pass/exploration sealed)
-10=Partially done (most complete, some remain)
-11=Issues found (warnings/lint errors discovered)
-12=Tests failing (build/type/test errors)
-13=System broken (can't compile/repo corrupt)
-14=Cannot proceed (impossible/out of scope)
+RULES:
+- Classify the state at the END of the turn. Problems encountered and RESOLVED during the turn do not count as trouble.
+- If multiple classes apply, choose the HIGHEST-PRIORITY one. Priority (highest first): 12 > 11 > 10 > 9 > 8 > 1 > 7 > 5 > 6 > 4 > 3 > 2.
+- TROUBLE (10-12) and STUCK (8-9) take priority even when the turn also asks the user a question.
+- Class 1 means work CANNOT PROCEED without the user's reply. An optional \"want me to also...?\" offer appended to a finished deliverable does NOT count — classify the deliverable instead.
+- If the assistant states further work it intends to do itself, that is IN FLIGHT (2) even if sub-tasks were completed.
+
+AWAITING USER — the turn cannot proceed without the user's reply:
+1=Needs the user's input: asks a required question, presents options or a plan to approve, requests information
+
+IN FLIGHT — work continues, nothing failing, no reply needed:
+2=Acknowledged / started / progress or status report; work still in flight or partially done
+
+COMPLETED — a deliverable was finished this turn:
+3=Analysis or explanation of code/system complete
+4=Non-code deliverable complete (research report, digest, documentation, plan, summary)
+5=Code change complete (feature, fix, refactor — any size). Local commits without pushing stay here.
+6=Cleanup complete: the work was mostly deleting/removing code or files
+7=Shipped: git push, publish, release, merge to shared branch, or production deploy completed
+
+STUCK — Claude could not do the thing:
+8=Came up empty: searched/investigated but could not find the target (file, function, answer)
+9=Cannot proceed: impossible, refused, or out of scope
+
+TROUBLE — the turn ENDS with something failing or broken:
+10=Ends with failing tests/builds/tools or a worker/agent in trouble, confined to new/in-progress work
+11=Previously-working behavior is now broken, or the shipped artifact is damaged (regression)
+12=Catastrophic: repo or dev environment corrupt/unusable, or a destructive incident occurred (data loss, wrong-branch force-push, leaked secret)
 
 <claude_code_response>
 $truncated_message
@@ -359,20 +410,72 @@ Return only raw JSON, no markdown code fences: {\"class\": N}"
             model="$newest"
             response=$(call_claude_api "$model" "$prompt" || true)
         else
-            log_message "WARNING: Self-heal failed (no Haiku model discoverable), using default class"
-            echo "$DEFAULT_CLASS"
-            return
+            log_message "WARNING: Self-heal failed (no Haiku model discoverable); classifier channel silent"
+            return 1
         fi
+    fi
+
+    err_type=$(echo "$response" | jq -r '.error.type // empty' 2>/dev/null || true)
+    if [ -n "$err_type" ]; then
+        local err_message
+        err_message=$(echo "$response" | jq -r '.error.message // empty' 2>/dev/null || true)
+        log_message "WARNING: Claude API error (${err_type}${err_message:+: $err_message}); classifier channel silent"
+        return 1
     fi
 
     # Extract and validate class number
     local class_num
     class_num=$(extract_class "$response" || true)
-    if [[ "$class_num" =~ ^[0-9]+$ ]] && [ "$class_num" -ge 1 ] && [ "$class_num" -le 14 ]; then
+    if [[ "$class_num" =~ ^[0-9]+$ ]] && [ "$class_num" -ge 1 ] && [ "$class_num" -le 12 ]; then
         echo "$class_num"
     else
-        log_message "WARNING: Invalid classification response, using default"
-        echo "$DEFAULT_CLASS"
+        log_message "WARNING: Invalid classification response; classifier channel silent"
+        return 1
+    fi
+}
+
+# Play the context-pressure sound once per session after the threshold is crossed.
+maybe_play_context_pressure_sound() {
+    local session_id
+    session_id=$(echo "$HOOK_INPUT" | jq -r '.session_id // .sessionId // empty' 2>/dev/null || true)
+    if [ -z "$session_id" ]; then
+        log_message "Context pressure: no session_id in hook input; skipping latch"
+        return 0
+    fi
+
+    local used_tokens
+    used_tokens=$(jq -s '
+        [.[] | select((.message.role // empty) == "assistant" and (.message.usage? != null)) | .message.usage]
+        | if length > 0 then
+            last | ((.input_tokens // 0) + (.cache_read_input_tokens // 0) + (.cache_creation_input_tokens // 0))
+          else
+            empty
+          end
+    ' "$TRANSCRIPT_PATH" 2>/dev/null || true)
+
+    if [ -z "$used_tokens" ]; then
+        log_message "Context pressure: no assistant usage found in transcript"
+        return 0
+    fi
+
+    local threshold="${STARCRAFT_CONTEXT_LIMIT_TOKENS:-160000}"
+    if ! [[ "$used_tokens" =~ ^[0-9]+$ ]] || ! [[ "$threshold" =~ ^[0-9]+$ ]]; then
+        log_message "Context pressure: invalid token count or threshold (used=$used_tokens threshold=$threshold)"
+        return 0
+    fi
+
+    if [ "$used_tokens" -lt "$threshold" ]; then
+        log_message "Context pressure: $used_tokens tokens below threshold $threshold"
+        return 0
+    fi
+
+    mkdir -p "$STATE_DIR"
+    local marker="${STATE_DIR}/context-latch-${session_id}"
+    if mkdir "$marker" 2>/dev/null; then
+        log_message "Context pressure: $used_tokens tokens >= threshold $threshold; firing latch"
+        play_configured_sound "context_pressure_sound" || true
+    else
+        log_message "Context pressure: latch already fired for session $session_id"
     fi
 }
 
@@ -401,25 +504,30 @@ main() {
         esac
     fi
 
+    # Deterministic context-pressure channel fires before normal classification.
+    maybe_play_context_pressure_sound
+
     # Classify the message
-    CLASS=$(classify_with_claude "$ASSISTANT_MESSAGE")
+    CLASS=$(classify_with_claude "$ASSISTANT_MESSAGE" || true)
+    if [ -z "$CLASS" ]; then
+        log_message "Classifier channel silent; no semantic sound played"
+        return 0
+    fi
 
     # Log the classification with simple names
     case "$CLASS" in
-        1) class_name="Need clarification" ;;
-        2) class_name="Need permissions" ;;
-        3) class_name="Need user choice" ;;
-        4) class_name="Search failed" ;;
-        5) class_name="Simple edit done" ;;
-        6) class_name="Feature complete" ;;
-        7) class_name="Analysis complete" ;;
-        8) class_name="Cleanup complete" ;;
-        9) class_name="Deployed successfully" ;;
-        10) class_name="Partially done" ;;
-        11) class_name="Issues found" ;;
-        12) class_name="Tests failing" ;;
-        13) class_name="System broken" ;;
-        14) class_name="Cannot proceed" ;;
+        1) class_name="Awaiting user" ;;
+        2) class_name="In flight" ;;
+        3) class_name="Analysis complete" ;;
+        4) class_name="Non-code deliverable" ;;
+        5) class_name="Code change complete" ;;
+        6) class_name="Cleanup complete" ;;
+        7) class_name="Shipped" ;;
+        8) class_name="Came up empty" ;;
+        9) class_name="Cannot proceed" ;;
+        10) class_name="Failing (new work)" ;;
+        11) class_name="Regression" ;;
+        12) class_name="Catastrophe" ;;
         *) class_name="Unknown" ;;
     esac
     log_message "Classified as: $CLASS - $class_name"
@@ -431,7 +539,8 @@ main() {
 # Run main function in background (non-blocking)
 # Fork once here, everything inside main runs synchronously
 main &
-disown
+main_pid=$!
+disown "$main_pid" 2>/dev/null || true
 
 # Exit immediately - don't wait for background process
 exit 0

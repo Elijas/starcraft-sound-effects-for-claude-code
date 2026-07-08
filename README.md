@@ -2,20 +2,21 @@
 
 **"Nuclear launch detected!"** - Transform your AI coding assistant into a StarCraft Terran Adjutant with semantic audio feedback.
 
-Ever wished you could instantly *hear* what type of response Claude just gave you? Now you can! This system maps Claude's responses to 14 iconic StarCraft: Brood War sounds based on their semantic meaning.
+Ever wished you could instantly *hear* what happened in Claude Code? Now you can. This system uses three StarCraft: Brood War Terran Adjutant audio channels: a 12-class semantic classifier, deterministic authorization prompts, and a once-per-session context-pressure alert.
 
 ## 🔊 What You'll Hear
 
 | Sound | When You'll Hear It | Example Response |
 |-------|-------------------|------------------|
-| **"Not enough minerals"** | Claude needs clarification | "Which file did you mean?" |
-| **"Insufficient vespene gas"** | Claude needs permissions | "Missing API key or credentials" |
-| **"Your base is under attack"** | Problems found in your code | "Found 3 bugs in your implementation" |
-| **"Nuclear missile ready"** | Major success! | "Git pushed! Tests passing! Deployed!" |
-| **"Nuclear launch detected"** | System broken | "Can't compile! Repo corrupted!" |
-| **"Research complete"** | Analysis done | "Found the root cause" |
+| **"Insufficient vespene gas"** | Claude Code is waiting for your authorization | Permission dialog, plan approval |
+| **"Additional supply depots required"** | Context usage crosses the configured threshold | Long session reaches ~80% of a 200k window |
+| **"Not enough minerals"** | Claude cannot continue without your reply | "Approve this plan and I'll start." |
+| **"Research complete"** | Analysis or explanation is complete | "The root cause is in the parser." |
+| **"Upgrade complete"** | Code change is complete | "Implemented the fix and tests pass." |
+| **"Your forces are under attack"** | The turn ends with tests/build/tools failing | "The new test is still failing." |
+| **"Nuclear missile ready"** | Work was shipped | "Pushed the branch and opened the PR." |
 
-...and 8 more semantic mappings that make your coding session feel like commanding a Terran base!
+...plus the rest of the v4 semantic outcomes, so your coding session sounds like a Terran command center without inventing fake success or failure states.
 
 ## 🚀 Quick Start
 
@@ -84,6 +85,22 @@ STARCRAFT_ROOT_DIR=/Users/your-username/Music/StarCraft
         "type": "command",
         "command": "/path/to/starcraft-sound-router.sh"
       }]
+    }],
+    "Notification": [{
+      "matcher": "permission_prompt",
+      "hooks": [{
+        "type": "command",
+        "command": "/path/to/notification-hook.sh",
+        "timeout": 5
+      }]
+    }],
+    "PreToolUse": [{
+      "matcher": "ExitPlanMode",
+      "hooks": [{
+        "type": "command",
+        "command": "/path/to/notification-hook.sh",
+        "timeout": 5
+      }]
     }]
   }
 }
@@ -112,34 +129,56 @@ STARCRAFT_ROOT_DIR=/Users/your-username/Music/StarCraft
 
 ## 🧠 How It Works
 
-### The 14 Semantic Classes
+### The Three Audio Channels
 
-The system uses AI to classify Claude's responses into 14 semantic categories:
+v4 separates deterministic events from semantic classification:
+
+| Channel | Hook | Trigger | Sound |
+|---------|------|---------|-------|
+| Classifier | `Stop` | Claude's final assistant message is classified into one of 12 semantic outcomes | Class-specific sound below |
+| Authorization | `Notification` + `PreToolUse` | Permission prompts and `ExitPlanMode` plan approvals | Insufficient vespene gas |
+| Context pressure | `Stop` | Last usage record crosses `STARCRAFT_CONTEXT_LIMIT_TOKENS` (default `160000`) | Additional supply depots required |
+
+The classifier uses Claude Haiku at `temperature: 0`. If the classifier cannot run, returns an API error, or produces an invalid class, the classifier channel is silent by design. It will not play a fake fallback outcome.
+
+### The 12 Semantic Classes
+
+The `Stop` hook classifies Claude's final response into these semantic categories:
 
 | ID | Class | Sound | Meaning |
 |----|-------|-------|---------|
-| 1 | Need clarification | Not enough minerals | Ambiguous, need details |
-| 2 | Need permissions | Insufficient vespene gas | Missing API key/credentials |
-| 3 | Need user choice | Additional supply depots required | Multiple valid options |
-| 4 | Search failed | Not enough energy | Couldn't find file/function |
-| 5 | Simple edit done | Addon complete | Single file, minor change |
-| 6 | Feature complete | Upgrade complete | Function/bug fix/refactor |
-| 7 | Analysis complete | Research complete | Code explained/files read |
-| 8 | Cleanup complete | Abandoning auxiliary structure | Deleted/removed code |
-| 9 | Deployed successfully | Nuclear missile ready | Git push/tests pass/exploration sealed |
-| 10 | Partially done | Landing sequence interrupted | Most complete, some remain |
-| 11 | Issues found | Your base is under attack | Warnings/lint errors discovered |
-| 12 | Tests failing | Your forces are under attack | Build/type/test errors |
-| 13 | System broken | Nuclear launch detected | Can't compile/repo corrupt |
-| 14 | Cannot proceed | Unacceptable landing zone | Impossible/out of scope |
+| 1 | Awaiting user | Not enough minerals | Needs the user's input before work can proceed |
+| 2 | In flight | Landing sequence interrupted | Work is started or still in progress |
+| 3 | Analysis complete | Research complete | Analysis or explanation of code/system is complete |
+| 4 | Non-code deliverable | Addon complete | Research report, digest, documentation, plan, or summary is complete |
+| 5 | Code change complete | Upgrade complete | Code change, fix, feature, or refactor is complete |
+| 6 | Cleanup complete | Abandoning auxiliary structure | Work was mostly deleting/removing code or files |
+| 7 | Shipped | Nuclear missile ready | Push, publish, release, merge, or deploy completed |
+| 8 | Came up empty | Not enough energy | Searched or investigated but could not find the target |
+| 9 | Cannot proceed | Unacceptable landing zone | Impossible, refused, or out of scope |
+| 10 | Failing (new work) | Your forces are under attack | New or in-progress work still has failing tests/builds/tools |
+| 11 | Regression | Your base is under attack | Previously-working behavior or shipped artifact is broken |
+| 12 | Catastrophe | Nuclear launch detected | Repo/environment corrupt or destructive incident occurred |
+
+Deterministic sounds:
+
+| Event | Sound | Meaning |
+|-------|-------|---------|
+| Authorization prompt | Insufficient vespene gas | Claude Code is blocked awaiting user permission or plan approval |
+| Context pressure | Additional supply depots required | The session crossed the context usage threshold; fires once per session |
+
+### Design Rationale
+
+The v4 class boundaries were validated against 200 real transcripts plus adversarial probes: 199/200 two-pass stability and 0 unstable probes. Authorization and context pressure are deterministic channels because they are better detected from hook metadata and transcript usage than from semantic classification.
 
 ### Technical Architecture
 
-1. **Hook Integration**: Integrates with Claude Code's `Stop` hook
+1. **Hook Integration**: Uses `Stop` for classifier/context pressure and `Notification` + `PreToolUse` for authorization prompts.
 2. **AI Classification**: Uses Claude Haiku to classify responses. The model is **self-healing** — if the pinned Haiku model is retired (the API returns a `not_found` error), the router queries the API's model list, picks the newest Haiku by release date, and caches it in `.haiku-model` so future sessions skip the discovery.
-3. **Sound Playback**: Maps classification to sound file and plays via `afplay`
-4. **Foreground gate**: Only the session you're actively watching makes sound (see [When Sounds Play](#when-sounds-play)) — in-process subagents and background sessions stay silent
-5. **Logging**: Disabled by default (set `ENABLE_LOGGING=true` in script to enable)
+3. **Deterministic Channels**: Permission prompts and high context usage are handled without AI classification.
+4. **Sound Playback**: Maps configured outcomes to relative sound paths and plays via `afplay`.
+5. **Presence gates**: The classifier stays quiet for background/subagent work; authorization prompts can also fire from detached sessions when a user is present at the machine (see [When Sounds Play](#when-sounds-play)).
+6. **Logging**: Disabled by default (set `ENABLE_LOGGING=true` in script to enable).
 
 > [!WARNING]
 > **Real-Time Error Detection Currently Not Available**
@@ -148,19 +187,20 @@ The system uses AI to classify Claude's responses into 14 semantic categories:
 >
 > **Current Status:**
 > - ✅ **Semantic classification works** (uses `Stop` hook - runs after Claude finishes)
+> - ✅ **Authorization and context-pressure sounds work** (deterministic v4 channels)
 > - ❌ **Real-time error detection broken** (uses `PostToolUse` hook - never registers)
 >
 > **Related Issues:**
 > - [#6403 - PostToolUse Hooks Not Executing](https://github.com/anthropics/claude-code/issues/6403)
 > - [#6305 - Post/PreToolUse Hooks Not Executing](https://github.com/anthropics/claude-code/issues/6305)
 >
-> The error detection code is ready and tested - it will work once Anthropic fixes the hook registration bug. Until then, only the semantic classification (Stop hook) provides audio feedback.
+> The error detection code is ready and tested - it will work once Anthropic fixes the hook registration bug. Until then, v4 provides Stop-hook classification plus deterministic authorization and context-pressure sounds.
 
 ### Performance
 
 - **API Cost**: ~0.001¢ per classification (uses Claude Haiku with minimal tokens)
 - **Latency**: < 500ms typical (API call + sound playback)
-- **Reliability**: Fails explicitly if .env not configured (no silent failures)
+- **Reliability**: Fails explicitly if `.env` is not configured; classifier API failures are silent by design so they never masquerade as a semantic outcome.
 
 ## 📁 Repository Structure
 
@@ -170,8 +210,10 @@ starcraft-sound-effects-for-claude-code/
 ├── ERROR-DETECTION-README.md       # Error detection hook documentation
 ├── sound-config.json               # Centralized sound mappings (relative paths)
 ├── starcraft-sound-router.sh       # Semantic classification hook (AI)
+├── notification-hook.sh            # Authorization prompt hook
 ├── error-detection-hook.sh         # Error detection hook (algorithmic)
 ├── setup.sh                        # Interactive setup script
+├── test-hooks-offline.sh           # Offline hook wiring test with fake curl/afplay
 ├── test-error-detection.sh         # Test error detection
 ├── test-semantic-sounds.sh         # Test semantic sounds
 ├── .env.example                    # Environment template
@@ -200,6 +242,8 @@ STARCRAFT_ROOT_DIR=/Users/you/Music/StarCraft  # Private, portable root director
     "1": "Starcraft1/Terran/Advisor-Annotated/tadErr00-not-enough-minerals.wav",
     ...
   },
+  "authorization_sound": "Starcraft1/Terran/Advisor-Annotated/tadErr01-insufficient-vespene-gas.wav",
+  "context_pressure_sound": "Starcraft1/Terran/Advisor-Annotated/tadErr02-additional-supply-depots-required.wav",
   "error_sound": "Starcraft1/Misc/PPwrDown.wav"
 }
 ```
@@ -212,11 +256,11 @@ All sound paths are **relative to `STARCRAFT_ROOT_DIR`**, making the configurati
 
 ### When Sounds Play
 
-By default, sound plays only in the **session you are actively watching**. This keeps a fleet of background or parallel sessions from turning into a chorus.
+By default, classifier sounds play only in the **session you are actively watching**. This keeps a fleet of background or parallel sessions from turning into a chorus.
 
-The `Stop` hook decides in this order:
+The `Stop` classifier/context hook decides in this order:
 
-1. **`STARCRAFT_SOUNDS` override** (environment variable) — always wins:
+1. **`STARCRAFT_SOUNDS` override** (environment variable) — controls primary-session playback:
    - `STARCRAFT_SOUNDS=1` (or `on` / `true`) → always play
    - `STARCRAFT_SOUNDS=0` (or `off` / `false`) → always silent
 2. **Subagents stay silent** — in-process subagents (`SubagentStop`) never play.
@@ -228,6 +272,13 @@ The `Stop` hook decides in this order:
 **No special tooling required.** The only optional dependency is `tmux`, and it is consulted *only* when you are already inside a tmux session. If you don't use tmux, sounds simply play on every response.
 
 > Because the attached-check is evaluated live on every response, a background tmux session brought to the foreground starts playing on its next response (no restart needed), and a foreground session sent to the background goes quiet.
+
+The authorization hook uses a presence-aware variant because permission prompts may happen in detached sessions:
+
+1. Not in tmux → play.
+2. In tmux and this session is attached → play.
+3. In tmux and this session is detached → play only if `tmux list-clients` shows a user is currently at the machine.
+4. Detached prompts are debounced per session for 10 minutes so overnight fleets do not repeatedly alert.
 
 ### Logging
 
@@ -266,7 +317,7 @@ Claude Code requires you to trust a workspace before hooks can run. If you don't
 
 **Other sound issues:**
 1. Check if `.env` exists and is configured
-2. Verify sound files exist in `SOUND_DIR`
+2. Verify sound files exist under `STARCRAFT_ROOT_DIR`
 3. Test audio manually: `afplay /path/to/any/sound.wav`
 4. Enable logging in the script (set `ENABLE_LOGGING=true`)
 5. Check logs: `tail -20 router.log`
@@ -280,6 +331,7 @@ Claude Code requires you to trust a workspace before hooks can run. If you don't
 - Verify `ANTHROPIC_API_KEY` in `.env`
 - Check API quota at console.anthropic.com
 - Run `./setup.sh` to test API connection
+- Classifier API errors are logged and silent by design; authorization/context sounds do not require classifier API calls
 
 ## 🎮 Why StarCraft?
 
