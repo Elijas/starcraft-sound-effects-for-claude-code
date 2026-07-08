@@ -49,9 +49,9 @@ echo "✓ sound-config.json is valid JSON"
 echo
 
 # Test 3: Verify all semantic sound files exist
-echo "Test 3: Checking semantic sound files (classes 1-14)..."
+echo "Test 3: Checking semantic sound files (classes 1-13)..."
 MISSING_COUNT=0
-for i in {1..14}; do
+for i in {1..13}; do
     RELATIVE_PATH=$(jq -r ".semantic_sounds.\"$i\" // empty" "$SOUND_CONFIG")
     if [ -z "$RELATIVE_PATH" ]; then
         echo "  ⚠ Class $i: No mapping in config"
@@ -73,7 +73,7 @@ if [ $MISSING_COUNT -gt 0 ]; then
     echo "⚠ Warning: $MISSING_COUNT semantic sound files are missing"
 else
     echo
-    echo "✓ All 14 semantic sound files found"
+    echo "✓ All 13 semantic sound files found"
 fi
 echo
 
@@ -96,13 +96,13 @@ echo
 
 # Test 5: Test playing a sample sound
 echo "Test 5: Testing audio playback..."
-echo "Playing class 6 sound (Upgrade Complete)..."
+echo "Playing class 8 sound (Upgrade Complete)..."
 
-CLASS_6_RELATIVE=$(jq -r '.semantic_sounds."6"' "$SOUND_CONFIG")
-CLASS_6_FULL="${STARCRAFT_ROOT_DIR}/${CLASS_6_RELATIVE}"
+CLASS_8_RELATIVE=$(jq -r '.semantic_sounds."8"' "$SOUND_CONFIG")
+CLASS_8_FULL="${STARCRAFT_ROOT_DIR}/${CLASS_8_RELATIVE}"
 
-if [ -f "$CLASS_6_FULL" ]; then
-    afplay "$CLASS_6_FULL" &
+if [ -f "$CLASS_8_FULL" ]; then
+    afplay "$CLASS_8_FULL" &
     echo "✓ Sound playback initiated"
     sleep 2
 else
@@ -117,7 +117,7 @@ echo "========================================"
 echo "Configuration: ✓ Centralized"
 echo "Root Directory: ✓ $STARCRAFT_ROOT_DIR"
 echo "Sound Config: ✓ sound-config.json"
-echo "Semantic Sounds: $((14 - MISSING_COUNT))/14 found"
+echo "Semantic Sounds: $((13 - MISSING_COUNT))/13 found"
 echo "Error Sound: ✓ Configured"
 echo
 echo "✓ Centralized configuration is working!"

@@ -2,21 +2,23 @@
 
 **"Nuclear launch detected!"** - Transform your AI coding assistant into a StarCraft Terran Adjutant with semantic audio feedback.
 
-Ever wished you could instantly *hear* what happened in Claude Code? Now you can. This system uses three StarCraft: Brood War Terran Adjutant audio channels: a 12-class semantic classifier, deterministic authorization prompts, and a once-per-session context-pressure alert.
+Ever wished you could instantly *hear* what happened in Claude Code? Now you can. This system uses three StarCraft: Brood War Terran Adjutant audio channels: a 13-class semantic classifier, deterministic authorization prompts, and a once-per-session context-pressure alert.
 
 ## 🔊 What You'll Hear
 
 | Sound | When You'll Hear It | Example Response |
 |-------|-------------------|------------------|
-| **"Insufficient vespene gas"** | Claude Code is waiting for your authorization | Permission dialog, plan approval |
-| **"Additional supply depots required"** | Context usage crosses the configured threshold | Long session reaches ~80% of a 200k window |
-| **"Not enough minerals"** | Claude cannot continue without your reply | "Approve this plan and I'll start." |
-| **"Research complete"** | Analysis or explanation is complete | "The root cause is in the parser." |
+| **"Insufficient vespene gas"** | Claude Code needs authorization, or the classifier sees a plan awaiting approval | Permission dialog, plan approval request |
+| **"Additional supply depots required"** | Context usage crosses the configured threshold | Long session reaches 800k tokens (~80% of a 1M window) |
+| **"Not enough minerals"** | Claude needs missing information before it can proceed | "Which file should I update?" |
+| **"Not enough energy"** | Claude finished a chunk and needs a continue-or-stop decision | "I finished the first module. Continue with the next one?" |
+| **"Landing sequence interrupted"** | Claude is working, with nothing finished yet this turn | "I'm checking the failing tests now." |
+| **"Research complete"** | A knowledge deliverable is complete | "The root cause is in the parser." |
 | **"Upgrade complete"** | Code change is complete | "Implemented the fix and tests pass." |
 | **"Your forces are under attack"** | The turn ends with tests/build/tools failing | "The new test is still failing." |
 | **"Nuclear missile ready"** | Work was shipped | "Pushed the branch and opened the PR." |
 
-...plus the rest of the v4 semantic outcomes, so your coding session sounds like a Terran command center without inventing fake success or failure states.
+...plus the rest of the v4.2 semantic outcomes, so your coding session sounds like a Terran command center without inventing fake success or failure states.
 
 ## 🚀 Quick Start
 
@@ -135,30 +137,33 @@ v4 separates deterministic events from semantic classification:
 
 | Channel | Hook | Trigger | Sound |
 |---------|------|---------|-------|
-| Classifier | `Stop` | Claude's final assistant message is classified into one of 12 semantic outcomes | Class-specific sound below |
+| Classifier | `Stop` | Claude's final assistant message is classified into one of 13 semantic outcomes | Class-specific sound below |
 | Authorization | `Notification` + `PreToolUse` | Permission prompts and `ExitPlanMode` plan approvals | Insufficient vespene gas |
-| Context pressure | `Stop` | Last usage record crosses `STARCRAFT_CONTEXT_LIMIT_TOKENS` (default `160000`) | Additional supply depots required |
+| Context pressure | `Stop` | Last usage record crosses `STARCRAFT_CONTEXT_LIMIT_TOKENS` (default `800000`) | Additional supply depots required |
+
+The context-pressure default is `800000`, which is 80% of a 1M-token window. Override it with `STARCRAFT_CONTEXT_LIMIT_TOKENS`; for example, use `160000` for 200k-window models.
 
 The classifier uses Claude Haiku at `temperature: 0`. If the classifier cannot run, returns an API error, or produces an invalid class, the classifier channel is silent by design. It will not play a fake fallback outcome.
 
-### The 12 Semantic Classes
+### The 13 Semantic Classes
 
 The `Stop` hook classifies Claude's final response into these semantic categories:
 
 | ID | Class | Sound | Meaning |
 |----|-------|-------|---------|
-| 1 | Awaiting user | Not enough minerals | Needs the user's input before work can proceed |
-| 2 | In flight | Landing sequence interrupted | Work is started or still in progress |
-| 3 | Analysis complete | Research complete | Analysis or explanation of code/system is complete |
-| 4 | Non-code deliverable | Addon complete | Research report, digest, documentation, plan, or summary is complete |
-| 5 | Code change complete | Upgrade complete | Code change, fix, feature, or refactor is complete |
-| 6 | Cleanup complete | Abandoning auxiliary structure | Work was mostly deleting/removing code or files |
-| 7 | Shipped | Nuclear missile ready | Push, publish, release, merge, or deploy completed |
-| 8 | Came up empty | Not enough energy | Searched or investigated but could not find the target |
-| 9 | Cannot proceed | Unacceptable landing zone | Impossible, refused, or out of scope |
-| 10 | Failing (new work) | Your forces are under attack | New or in-progress work still has failing tests/builds/tools |
-| 11 | Regression | Your base is under attack | Previously-working behavior or shipped artifact is broken |
-| 12 | Catastrophe | Nuclear launch detected | Repo/environment corrupt or destructive incident occurred |
+| 1 | Needs info | Not enough minerals | Asks what/which/how, or requests details or missing facts from the user |
+| 2 | Needs plan approval | Insufficient vespene gas | Presented a plan, spec, or proposal and awaits approval before starting |
+| 3 | Continue or stop? | Not enough energy | A chunk of work is done; asks whether to continue with the next chunk or stop |
+| 4 | Working | Landing sequence interrupted | Acknowledged, started, or gave status/health report; nothing finished yet this turn |
+| 5 | Milestone | Addon complete | One or more sub-tasks finished; work continues autonomously |
+| 6 | Wrapped up | Abandoning auxiliary structure | Checkpoint, handoff, session retirement, or work deliberately paused with nothing left in flight |
+| 7 | Knowledge deliverable | Research complete | Analysis, explanation, research report, digest, documentation, plan, or summary is complete |
+| 8 | Code change complete | Upgrade complete | Feature, fix, refactor, deletion, or cleanup is complete; local commits without pushing stay here |
+| 9 | Shipped | Nuclear missile ready | Push, publish, release, merge, or production deploy completed |
+| 10 | Cannot proceed | Unacceptable landing zone | Impossible, refused, out of scope, or an unrecoverable error/rate-limit ended the turn |
+| 11 | Failing (new work) | Your forces are under attack | Failing tests/builds/tools or a worker/agent in trouble, confined to new or in-progress work |
+| 12 | Regression | Your base is under attack | Previously-working behavior is broken, or the shipped artifact is damaged |
+| 13 | Catastrophe | Nuclear launch detected | Repo or dev environment is corrupt/unusable, or a destructive incident occurred |
 
 Deterministic sounds:
 
@@ -167,9 +172,11 @@ Deterministic sounds:
 | Authorization prompt | Insufficient vespene gas | Claude Code is blocked awaiting user permission or plan approval |
 | Context pressure | Additional supply depots required | The session crossed the context usage threshold; fires once per session |
 
+Class 2 and the authorization channel intentionally share **"Insufficient vespene gas"**: gas means your authorization is needed, regardless of whether the signal came from the classifier or hook metadata.
+
 ### Design Rationale
 
-The v4 class boundaries were validated against 200 real transcripts plus adversarial probes: 199/200 two-pass stability and 0 unstable probes. Authorization and context pressure are deterministic channels because they are better detected from hook metadata and transcript usage than from semantic classification.
+The v4.2 taxonomy was rebalanced against 200 real transcripts to spread firing rates: the top class is ~21%, and Gini improved to 0.55 from 0.67. Trouble classes are intentionally rare, while authorization and context pressure remain deterministic channels because they are better detected from hook metadata and transcript usage than from semantic classification.
 
 ### Technical Architecture
 

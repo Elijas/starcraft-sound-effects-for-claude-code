@@ -151,7 +151,7 @@ if [ "$SKIP_API_TEST" = false ]; then
                 "temperature": 0.3,
                 "messages": [{
                     "role": "user",
-                    "content": "Classify: \"Task completed successfully\" into class 1-14. Classes: 1=Need clarification 2=Need permissions 3=Need user choice 4=Search failed 5=Simple edit done 6=Feature complete 7=Analysis complete 8=Cleanup complete 9=Deployed successfully 10=Partially done 11=Issues found 12=Tests failing 13=System broken 14=Cannot proceed. Return only: {\"class\": N}"
+                    "content": "Classify: \"Task completed successfully\" into class 1-13. Classes: 1=Needs info 2=Needs plan approval 3=Continue or stop 4=Working 5=Milestone 6=Wrapped up 7=Knowledge deliverable 8=Code change complete 9=Shipped 10=Cannot proceed 11=Failing new work 12=Regression 13=Catastrophe. Return only: {\"class\": N}"
                 }]
             }' 2>/dev/null)
 

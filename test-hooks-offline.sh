@@ -132,7 +132,7 @@ case "${FAKE_CURL_MODE:-ok}" in
         printf '%s' '{"data":[{"id":"claude-haiku-test","created_at":"2026-01-01T00:00:00Z"}]}'
         ;;
     *)
-        printf '%s' '{"content":[{"text":"{\"class\": 3}"}]}'
+        printf '%s' '{"content":[{"text":"{\"class\": 7}"}]}'
         ;;
 esac
 EOF_CURL
@@ -182,17 +182,17 @@ test_router_classification() {
     reset_logs
     local transcript="${WORKDIR}/stop.jsonl"
     local stdout_file="${WORKDIR}/router-stop.out"
-    local class3="${SOUND_ROOT}/Starcraft1/Terran/Advisor-Annotated/tadUpd02-research-complete.wav"
+    local class7="${SOUND_ROOT}/Starcraft1/Terran/Advisor-Annotated/tadUpd02-research-complete.wav"
     write_transcript "$transcript" "Here is the analysis you asked for." 100
 
-    run_hook "$REPO_UNDER_TEST/starcraft-sound-router.sh" "$(stop_input "$transcript" "stop-class3")" "$stdout_file"
+    run_hook "$REPO_UNDER_TEST/starcraft-sound-router.sh" "$(stop_input "$transcript" "stop-class7")" "$stdout_file"
 
     if wait_for_lines "$CURL_LOG" 1 && wait_for_lines "$AFPLAY_LOG" 1 &&
         [ "$(line_count "$AFPLAY_LOG")" -eq 1 ] &&
-        grep -Fxq "$class3" "$AFPLAY_LOG"; then
-        pass "router classifies via fake curl and plays class-3 sound"
+        grep -Fxq "$class7" "$AFPLAY_LOG"; then
+        pass "router classifies via fake curl and plays class-7 sound"
     else
-        fail "router classifies via fake curl and plays class-3 sound"
+        fail "router classifies via fake curl and plays class-7 sound"
     fi
 }
 
@@ -201,15 +201,15 @@ test_router_context_latch() {
     local transcript="${WORKDIR}/context.jsonl"
     local stdout_file="${WORKDIR}/router-context.out"
     local depots="${SOUND_ROOT}/Starcraft1/Terran/Advisor-Annotated/tadErr02-additional-supply-depots-required.wav"
-    local class3="${SOUND_ROOT}/Starcraft1/Terran/Advisor-Annotated/tadUpd02-research-complete.wav"
-    write_transcript "$transcript" "The implementation is complete." 170000
+    local class7="${SOUND_ROOT}/Starcraft1/Terran/Advisor-Annotated/tadUpd02-research-complete.wav"
+    write_transcript "$transcript" "The implementation is complete." 850000
 
     run_hook "$REPO_UNDER_TEST/starcraft-sound-router.sh" "$(stop_input "$transcript" "ctx-session")" "$stdout_file"
 
     local first_ok=false
     if wait_for_lines "$AFPLAY_LOG" 2 && wait_for_lines "$CURL_LOG" 1 &&
         [ "$(sed -n '1p' "$AFPLAY_LOG")" = "$depots" ] &&
-        [ "$(sed -n '2p' "$AFPLAY_LOG")" = "$class3" ] &&
+        [ "$(sed -n '2p' "$AFPLAY_LOG")" = "$class7" ] &&
         [ -d "${STATE_DIR}/context-latch-ctx-session" ]; then
         first_ok=true
     fi
@@ -220,7 +220,7 @@ test_router_context_latch() {
     local second_ok=false
     if wait_for_lines "$AFPLAY_LOG" 1 &&
         [ "$(line_count "$AFPLAY_LOG")" -eq 1 ] &&
-        [ "$(sed -n '1p' "$AFPLAY_LOG")" = "$class3" ]; then
+        [ "$(sed -n '1p' "$AFPLAY_LOG")" = "$class7" ]; then
         second_ok=true
     fi
 
