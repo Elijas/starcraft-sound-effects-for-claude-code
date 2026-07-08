@@ -6,26 +6,16 @@ Ever wished you could instantly *hear* what happened in Claude Code? Now you can
 
 ## 🔊 What You'll Hear
 
-Every Terran Adjutant line, ordered by how often it fires. Shares are the measured
-distribution from the author's real sessions (yours will differ; the *ordering* is
-what matters — frequent sounds are calm, rare sounds are alarming):
+A taste — the full 14-sound map lives in [The Sound Map](#the-sound-map):
 
-| You hear | It means | Example | ≈ Share |
-|----------|----------|---------|---------|
-| **"Landing sequence interrupted"** | Working — status/ack, nothing finished yet | "I'm checking the failing tests now." | ~21% |
-| **"Not enough minerals"** | Needs information from you | "Which file should I update?" | ~20% |
-| **"Not enough energy"** | Chunk done — continue or stop? | "First module done. Continue with the next?" | ~16% |
-| **"Insufficient vespene gas"** | Your authorization is needed — plan approval or permission dialog | "Approve this plan and I'll start." | ~13% + every permission wait |
-| **"Research complete"** | Knowledge deliverable complete — analysis, report, docs | "The root cause is in the parser." | ~12% |
-| **"Add-on complete"** | Milestone — sub-tasks landed, work continues | "Committed modules A and B; starting C now." | ~9% |
-| **"Abandoning auxiliary structure"** | Wrapped up / parked — checkpoint, handoff, session retiring | "Pausing here — clean checkpoint, nothing in flight." | ~5% |
-| **"Unacceptable landing zone"** | Cannot proceed — refused, impossible, or hard error | "API Error: rate limited." | ~2.5% |
-| **"Nuclear missile ready"** | Shipped — push, publish, release, deploy | "Pushed the branch and opened the PR." | ~2% |
-| **"Upgrade complete"** | Code change complete | "Implemented the fix and tests pass." | rare |
-| **"Additional supply depots required"** | Context crossed the threshold (default 800k) | Long session filling its window | once per long session |
-| **"Your forces are under attack"** | Turn ends with new work failing | "The new test is still failing." | rare (bad news) |
-| **"Your base is under attack"** | Regression — previously-working behavior broke | "12 previously-passing tests now fail." | rare (worse news) |
-| **"Nuclear launch detected"** | Catastrophe — repo/env corrupt, destructive incident | "I force-pushed over your commits." | very rare (drop everything) |
+| You hear | It means |
+|----------|----------|
+| **"Not enough minerals"** | Claude needs information from you |
+| **"Insufficient vespene gas"** | Your authorization is needed |
+| **"Nuclear missile ready"** | Shipped — push, publish, deploy |
+| **"Nuclear launch detected"** | Catastrophe — drop everything |
+
+Frequent sounds are calm; rare sounds are alarming. If you hear a sound you don't recognize, something unusual happened.
 
 ## 🚀 Quick Start
 
@@ -152,32 +142,35 @@ The context-pressure default is `800000`, which is 80% of a 1M-token window. Ove
 
 The classifier uses Claude Haiku at `temperature: 0`. If the classifier cannot run, returns an API error, or produces an invalid class, the classifier channel is silent by design. It will not play a fake fallback outcome.
 
-### The 13 Semantic Classes
+### The Sound Map
 
-The `Stop` hook classifies Claude's final response into these semantic categories:
+The `Stop` hook classifies Claude's final response into 13 semantic classes (IDs match
+`sound-config.json` and `router.log`). Shares are the measured distribution from the
+author's real sessions — yours will differ, but the shape is the point: routine outcomes
+got calm sounds, trouble got alarms.
 
-| ID | Class | Sound | Meaning |
-|----|-------|-------|---------|
-| 1 | Needs info | Not enough minerals | Asks what/which/how, or requests details or missing facts from the user |
-| 2 | Needs plan approval | Insufficient vespene gas | Presented a plan, spec, or proposal and awaits approval before starting |
-| 3 | Continue or stop? | Not enough energy | A chunk of work is done; asks whether to continue with the next chunk or stop |
-| 4 | Working | Landing sequence interrupted | Acknowledged, started, or gave status/health report; nothing finished yet this turn |
-| 5 | Milestone | Addon complete | One or more sub-tasks finished; work continues autonomously |
-| 6 | Wrapped up | Abandoning auxiliary structure | Checkpoint, handoff, session retirement, or work deliberately paused with nothing left in flight |
-| 7 | Knowledge deliverable | Research complete | Analysis, explanation, research report, digest, documentation, plan, or summary is complete |
-| 8 | Code change complete | Upgrade complete | Feature, fix, refactor, deletion, or cleanup is complete; local commits without pushing stay here |
-| 9 | Shipped | Nuclear missile ready | Push, publish, release, merge, or production deploy completed |
-| 10 | Cannot proceed | Unacceptable landing zone | Impossible, refused, out of scope, or an unrecoverable error/rate-limit ended the turn |
-| 11 | Failing (new work) | Your forces are under attack | Failing tests/builds/tools or a worker/agent in trouble, confined to new or in-progress work |
-| 12 | Regression | Your base is under attack | Previously-working behavior is broken, or the shipped artifact is damaged |
-| 13 | Catastrophe | Nuclear launch detected | Repo or dev environment is corrupt/unusable, or a destructive incident occurred |
+| ID | You hear | It means | Example | ≈ Share |
+|----|----------|----------|---------|---------|
+| 1 | **"Not enough minerals"** | Needs info — asks what/which/how, missing facts | "Which file should I update?" | ~20% |
+| 2 | **"Insufficient vespene gas"** | Needs plan approval before starting | "Approve this plan and I'll start." | ~13% |
+| 3 | **"Not enough energy"** | Chunk done — continue or stop? | "First module done. Continue with the next?" | ~16% |
+| 4 | **"Landing sequence interrupted"** | Working — status/ack, nothing finished yet | "I'm checking the failing tests now." | ~21% |
+| 5 | **"Add-on complete"** | Milestone — sub-tasks landed, work continues | "Committed modules A and B; starting C now." | ~9% |
+| 6 | **"Abandoning auxiliary structure"** | Wrapped up / parked — checkpoint, handoff, retiring | "Pausing here — clean checkpoint, nothing in flight." | ~5% |
+| 7 | **"Research complete"** | Knowledge deliverable — analysis, report, docs, plan | "The root cause is in the parser." | ~12% |
+| 8 | **"Upgrade complete"** | Code change complete (incl. deletions; local commits stay here) | "Implemented the fix and tests pass." | rare |
+| 9 | **"Nuclear missile ready"** | Shipped — push, publish, release, merge, deploy | "Pushed the branch and opened the PR." | ~2% |
+| 10 | **"Unacceptable landing zone"** | Cannot proceed — refused, impossible, or hard error | "API Error: rate limited." | ~2.5% |
+| 11 | **"Your forces are under attack"** | Turn ends with new work failing | "The new test is still failing." | rare (bad news) |
+| 12 | **"Your base is under attack"** | Regression — previously-working behavior broke | "12 previously-passing tests now fail." | rare (worse news) |
+| 13 | **"Nuclear launch detected"** | Catastrophe — repo/env corrupt, destructive incident | "I force-pushed over your commits." | very rare (drop everything) |
 
-Deterministic sounds:
+Two more sounds fire from deterministic hooks (no classifier involved):
 
-| Event | Sound | Meaning |
-|-------|-------|---------|
-| Authorization prompt | Insufficient vespene gas | Claude Code is blocked awaiting user permission or plan approval |
-| Context pressure | Additional supply depots required | The session crossed the context usage threshold; fires once per session |
+| You hear | It means | Fires |
+|----------|----------|-------|
+| **"Insufficient vespene gas"** | Blocked awaiting your permission or plan approval | On every permission dialog / `ExitPlanMode` |
+| **"Additional supply depots required"** | Context crossed the threshold (default 800k tokens) | Once per session |
 
 Class 2 and the authorization channel intentionally share **"Insufficient vespene gas"**: gas means your authorization is needed, regardless of whether the signal came from the classifier or hook metadata.
 
