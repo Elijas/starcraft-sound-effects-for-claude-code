@@ -3,7 +3,7 @@
 # StarCraft Sound Router v4.2
 # Hybrid deterministic channels plus 13-class semantic Claude API classification
 
-set -euo pipefail
+set -Eeuo pipefail
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,6 +13,14 @@ LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
 STATE_DIR="${STARCRAFT_SOUNDS_STATE_DIR:-/tmp/starcraft-sounds-state}"
 ENABLE_LOGGING="${ENABLE_LOGGING:-false}"  # Set to true (or export ENABLE_LOGGING=true) to enable logging
+
+# Never block the agent. Under set -e, an unexpected failure propagates the failing
+# command's exit code to Claude Code — and exit 2 is the hook protocol's "block the
+# Stop and force Claude to continue" code (jq, grep, and ugrep all exit 2 on errors).
+# A sound hook must never do that, so convert every unexpected failure into a logged
+# silent success. Deliberate config errors below bypass this via explicit `exit 1`,
+# which does not fire the ERR trap and is non-blocking to Claude Code.
+trap 'rc=$?; [ "$ENABLE_LOGGING" = true ] && echo "[$(date "+%Y-%m-%d %H:%M:%S")] ERROR: unexpected failure at line $LINENO (exit $rc); exiting 0 to avoid blocking the agent" >> "$LOG_FILE"; exit 0' ERR
 
 # Model self-healing: the classifier pins a Haiku model. Models get retired over
 # time, so on a "model not found" error the router discovers the newest Haiku from
@@ -122,7 +130,7 @@ if ! should_play_sound; then
 fi
 
 # Extract transcript path from hook input (supports both camelCase and snake_case)
-TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcriptPath // .transcript_path // empty')
+TRANSCRIPT_PATH=$(echo "$HOOK_INPUT" | jq -r '.transcriptPath // .transcript_path // empty' 2>/dev/null || true)
 
 if [ -z "$TRANSCRIPT_PATH" ]; then
     log_message "ERROR: No transcript path in hook input"
@@ -144,7 +152,7 @@ ASSISTANT_MESSAGE=$(jq -s '
     else
         empty
     end
-' "$TRANSCRIPT_PATH" 2>/dev/null)
+' "$TRANSCRIPT_PATH" 2>/dev/null || true)
 
 if [ -z "$ASSISTANT_MESSAGE" ]; then
     log_message "ERROR: Could not extract assistant message from transcript"
