@@ -324,6 +324,65 @@ test_notification_hook() {
     fi
 }
 
+# Run the notification hook once against a given user config and report how many
+# sounds played.
+#
+# STARCRAFT_SOUNDS=auto is load-bearing: run_hook defaults it to 1, which sets
+# force_play and short-circuits the config gate entirely. Without this override
+# every assertion below would pass vacuously.
+#
+# A distinct session_id per call avoids the auth debounce state carrying over.
+auth_play_count() {
+    local cfg_body="$1"
+    local session="$2"
+    local cfg="${TEST_HOME}/.config/starcraft-sounds.yaml"
+
+    mkdir -p "${TEST_HOME}/.config"
+    if [ -z "$cfg_body" ]; then
+        rm -f "$cfg"
+    else
+        printf '%s' "$cfg_body" > "$cfg"
+    fi
+
+    reset_logs
+    local payload
+    payload=$(jq -cn --arg s "$session" \
+        '{hook_event_name:"Notification",notification_type:"permission_prompt",session_id:$s}')
+    # TMUX= is load-bearing too. This suite runs inside tmux, so the hook would
+    # otherwise reach its "detached with no clients" gate and go silent for
+    # reasons unrelated to the config. Blanking TMUX takes the not-in-tmux
+    # early return, leaving the user-config gate as the only variable under test.
+    run_hook "$REPO_UNDER_TEST/notification-hook.sh" "$payload" \
+        "${WORKDIR}/auth-config.out" STARCRAFT_SOUNDS=auto TMUX=
+    wait_for_lines "$AFPLAY_LOG" 1 || true
+    line_count "$AFPLAY_LOG"
+}
+
+test_authorization_user_config() {
+    local on_body='completion:\n  mode: default\nerror:\n  mode: default\nidle_warning:\n  enabled: true\n'
+    local off_body='completion:\n  mode: silent\nerror:\n  mode: silent\nidle_warning:\n  enabled: false\n'
+
+    # 1. No config file: a fresh machine must behave as it always did -> plays.
+    local no_cfg;     no_cfg=$(auth_play_count "" "auth-cfg-1")
+    # 2. Sounds globally on -> plays.
+    local on_cfg;     on_cfg=$(auth_play_count "$(printf "$on_body")" "auth-cfg-2")
+    # 3. Global toggle off -> silent. This is the original bug.
+    local off_cfg;    off_cfg=$(auth_play_count "$(printf "$off_body")" "auth-cfg-3")
+    # 4. Global off but authorization opted in -> stays audible.
+    local always_cfg; always_cfg=$(auth_play_count "$(printf "${off_body}authorization:\n  mode: always\n")" "auth-cfg-4")
+    # 5. Sounds on but authorization silenced on its own -> silent.
+    local silent_cfg; silent_cfg=$(auth_play_count "$(printf "${on_body}authorization:\n  mode: silent\n")" "auth-cfg-5")
+
+    rm -f "${TEST_HOME}/.config/starcraft-sounds.yaml"
+
+    if [ "$no_cfg" -eq 1 ] && [ "$on_cfg" -eq 1 ] && [ "$off_cfg" -eq 0 ] &&
+        [ "$always_cfg" -eq 1 ] && [ "$silent_cfg" -eq 0 ]; then
+        pass "authorization honors user config (global toggle + per-channel mode)"
+    else
+        fail "authorization user-config gate (no-cfg=$no_cfg on=$on_cfg off=$off_cfg always=$always_cfg silent=$silent_cfg; want 1 1 0 1 0)"
+    fi
+}
+
 setup_fixture_repo
 test_static_validation
 test_router_classification
@@ -331,6 +390,7 @@ test_router_context_latch
 test_router_subagent_silent
 test_router_api_error_silent
 test_notification_hook
+test_authorization_user_config
 
 if [ "$FAIL_COUNT" -eq 0 ]; then
     echo "All offline hook checks passed."

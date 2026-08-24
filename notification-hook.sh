@@ -7,6 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOUND_CONFIG_FILE="${SCRIPT_DIR}/sound-config.json"
+USER_CONFIG_FILE="${STARCRAFT_USER_CONFIG:-${HOME}/.config/starcraft-sounds.yaml}"
 LOG_FILE="${SCRIPT_DIR}/router.log"
 ENV_FILE="${SCRIPT_DIR}/.env"
 STATE_DIR="${STARCRAFT_SOUNDS_STATE_DIR:-/tmp/starcraft-sounds-state}"
@@ -83,6 +84,48 @@ is_authorization_event() {
     return 1
 }
 
+# Read this channel's own setting from the user config.
+#
+# Every other channel already has a dedicated key (.completion.mode,
+# .error.mode, .idle_warning.enabled); authorization had none, which is why
+# silencing completion+error used to drag permission prompts down with it.
+#
+# Modes: default (follow the global toggle) | silent (never) | always (ignore
+# the global toggle and stay audible).
+#
+# A missing config file or a missing yq both yield "default", so a machine that
+# has neither behaves exactly as it did before this gate existed.
+read_authorization_mode() {
+    if [ ! -f "$USER_CONFIG_FILE" ] || ! command -v yq >/dev/null 2>&1; then
+        printf 'default'
+        return 0
+    fi
+    yq -r '.authorization.mode // "default"' "$USER_CONFIG_FILE" 2>/dev/null || printf 'default'
+}
+
+# Is the whole sound system switched off?
+#
+# The `starcraft` toggle CLI has no dedicated off flag: it represents OFF by
+# setting completion+error to silent and disabling idle warnings, and detects
+# its own OFF state with exactly this three-key test. Mirroring it here keeps
+# the two in agreement by construction rather than by coincidence.
+#
+# Returns non-zero (i.e. "not off") when the config or yq is absent, so the
+# default on a fresh machine is to play.
+global_sounds_are_off() {
+    [ -f "$USER_CONFIG_FILE" ] || return 1
+    command -v yq >/dev/null 2>&1 || return 1
+
+    local completion_mode error_mode idle_warning
+    completion_mode=$(yq -r '.completion.mode // "default"' "$USER_CONFIG_FILE" 2>/dev/null || printf 'default')
+    error_mode=$(yq -r '.error.mode // "default"' "$USER_CONFIG_FILE" 2>/dev/null || printf 'default')
+    idle_warning=$(yq -r '.idle_warning.enabled // false' "$USER_CONFIG_FILE" 2>/dev/null || printf 'false')
+
+    [ "$completion_mode" = "silent" ] &&
+        [ "$error_mode" = "silent" ] &&
+        [ "$idle_warning" = "false" ]
+}
+
 should_play_authorization_sound() {
     local force_play=false
     case "$(printf '%s' "$SOUND_SCOPE" | tr '[:upper:]' '[:lower:]')" in
@@ -92,6 +135,21 @@ should_play_authorization_sound() {
             log_message "Authorization gate: silenced by STARCRAFT_SOUNDS override"
             return 1 ;;
     esac
+
+    if [ "$force_play" != true ]; then
+        case "$(read_authorization_mode)" in
+            silent)
+                log_message "Authorization gate: silenced by authorization.mode"
+                return 1 ;;
+            always)
+                : ;;   # explicit opt-in: stay audible even when the global toggle is off
+            *)
+                if global_sounds_are_off; then
+                    log_message "Authorization gate: silenced by global user toggle"
+                    return 1
+                fi ;;
+        esac
+    fi
 
     if [ -z "${TMUX:-}" ]; then
         AUTH_DEBOUNCE_REQUIRED=false

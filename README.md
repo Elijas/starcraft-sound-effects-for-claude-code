@@ -261,6 +261,40 @@ All sound paths are **relative to `STARCRAFT_ROOT_DIR`**, making the configurati
 - ✅ Maintainable (one config file)
 - ✅ Extensible (easy to add new sounds)
 
+**Layer 3: User Preferences (`~/.config/starcraft-sounds.yaml`)** — *optional*
+
+Per-channel volume control. Every channel has its own key, and each is independent:
+
+```yaml
+completion:
+  mode: default        # default (LLM router) | single | silent
+error:
+  mode: default        # default (pattern match) | single | silent
+idle_warning:
+  enabled: true
+authorization:
+  mode: default        # default (follow global toggle) | silent | always
+```
+
+`authorization` governs permission prompts and plan-approval dialogs:
+
+| Value | Behaviour |
+|---|---|
+| `default` (or key absent) | Follows the global toggle — see below |
+| `silent` | Permission prompts never make a sound |
+| `always` | Permission prompts stay audible even when everything else is silenced |
+
+**The global toggle.** There is no single `enabled:` flag. Sounds count as globally
+OFF when `completion.mode` and `error.mode` are both `silent` **and**
+`idle_warning.enabled` is `false`. That is precisely how the `starcraft` toggle
+utility represents its own OFF state, so the two agree by construction.
+
+**This file is entirely optional.** If it is missing — or if `yq` is not
+installed — every channel falls back to its default and sounds play as normal.
+Nothing here is required to run the project.
+
+> Override the location with `STARCRAFT_USER_CONFIG=/path/to/config.yaml`.
+
 ### When Sounds Play
 
 By default, classifier sounds play only in the **session you are actively watching**. This keeps a fleet of background or parallel sessions from turning into a chorus.
@@ -282,10 +316,20 @@ The `Stop` classifier/context hook decides in this order:
 
 The authorization hook uses a presence-aware variant because permission prompts may happen in detached sessions:
 
-1. Not in tmux → play.
-2. In tmux and this session is attached → play.
-3. In tmux and this session is detached → play only if `tmux list-clients` shows a user is currently at the machine.
-4. Detached prompts are debounced per session for 10 minutes so overnight fleets do not repeatedly alert.
+1. **`STARCRAFT_SOUNDS` override** — as above; `1`/`on` forces play, `0`/`off` forces silence.
+2. **User config gate** (`~/.config/starcraft-sounds.yaml`, optional):
+   - `authorization.mode: silent` → never play permission prompts.
+   - `authorization.mode: always` → stay audible even when the global toggle is off.
+   - `default` or absent → follow the global toggle (silent only when completion **and** error are `silent` **and** idle warnings are off).
+   - No config file, or no `yq` → play, exactly as before this gate existed.
+3. Not in tmux → play.
+4. In tmux and this session is attached → play.
+5. In tmux and this session is detached → play only if `tmux list-clients` shows a user is currently at the machine.
+6. Detached prompts are debounced per session for 10 minutes so overnight fleets do not repeatedly alert.
+
+> Before this gate existed, silencing every other channel still left permission
+> prompts audible, because authorization was the one channel with no config key
+> of its own.
 
 ### Logging
 
